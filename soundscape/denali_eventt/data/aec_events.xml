@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">
+  <eventParameters publicID="smi:local/da113d42-b46d-4e39-b519-76dd58b151e7">
+    <event publicID="smi:local/event/00001">
+      <preferredOriginID>smi:local/2fa19348-8350-4ca0-b4ac-88a102aa696c</preferredOriginID>
+      <preferredMagnitudeID>smi:local/1a5fffaa-5f45-45c1-bbb3-1f851cd0058b</preferredMagnitudeID>
+      <origin publicID="smi:local/2fa19348-8350-4ca0-b4ac-88a102aa696c">
+        <time>
+          <value>2019-02-18T17:02:46.332000Z</value>
+        </time>
+        <latitude>
+          <value>61.46</value>
+        </latitude>
+        <longitude>
+          <value>-149.93</value>
+        </longitude>
+        <depth>
+          <value>40910.0</value>
+        </depth>
+      </origin>
+      <magnitude publicID="smi:local/1a5fffaa-5f45-45c1-bbb3-1f851cd0058b">
+        <mag>
+          <value>4.36</value>
+        </mag>
+        <type>ML</type>
+      </magnitude>
+    </event>
+    <event publicID="smi:local/event/00002">
+      <preferredOriginID>smi:local/57316ba2-8fb0-44f4-bf05-90c5677d8f00</preferredOriginID>
+      <preferredMagnitudeID>smi:local/5f67dec3-3436-429f-bb0f-4c3e437bb2e9</preferredMagnitudeID>
+      <origin publicID="smi:local/57316ba2-8fb0-44f4-bf05-90c5677d8f00">
+        <time>
+          <value>2019-02-19T06:59:07.339000Z</value>
+        </time>
+        <latitude>
+          <value>61.88</value>
+        </latitude>
+        <longitude>
+          <value>-149.3</value>
+        </longitude>
+        <depth>
+          <value>6910.0</value>
+        </depth>
+      </origin>
+      <magnitude publicID="smi:local/5f67dec3-3436-429f-bb0f-4c3e437bb2e9">
+        <mag>
+          <value>3.33</value>
+        </mag>
+        <type>ML</type>
+      </magnitude>
+    </event>
+  </eventParameters>
+</q:quakeml>

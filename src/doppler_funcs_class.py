@@ -25,6 +25,9 @@ class DopplerInversion:
 		self.closest_approach_dist = None
 		self.source_speed = None
 		self.source_frequencies = None
+		
+		if self.method == 'full':
+			self.num_overtones = len(self.mprior[4:])
 
 	def cprior_setup(self):
 		f0_sigma = self.prior_sigma[0]
@@ -248,7 +251,7 @@ class DopplerInversion:
 
 			else:
 				m = mnew
-			f0 = m[0]
+			f0 = m[0] #must move f0 = m[4] to match full inversion
 			v0 = m[1]
 			l = m[2]
 			t0 = m[3]
@@ -347,7 +350,7 @@ class DopplerInversion:
 		cprior0, cprior, Cd0, Cd, mnew = self.cprior_setup()
 		self.cprior = cprior
 		self.sigma = sigma
-		num_overtones = len(self.mprior[4:])
+
 		qv = 0
 
 		while qv < self.num_iterations:
@@ -374,10 +377,10 @@ class DopplerInversion:
 			self.sound_speed = c
 
 			fpred = []
-			G = np.zeros((0, num_overtones + 4))
+			G = np.zeros((0, self.num_overtones + 4))
 			cum = 0
-			for p in range(num_overtones):
-				new_row = np.zeros(num_overtones + 4)
+			for p in range(self.num_overtones):
+				new_row = np.zeros(self.num_overtones + 4)
 				f0 = f0_array[p]
 				self.source_frequencies = f0
 				

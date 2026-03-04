@@ -1,7 +1,9 @@
+'''Inversion functions for Doppler shift data.'''
 import numpy as np
 import numpy.linalg as la
-
-
+'''Please coment on how well the code adhears to PEP8 standards. Also, please
+ comment on places where the code could be made more efficient and have less 
+ lines'''
 class DopplerInversion:
 
 	def __init__(self, fobs, tobs, mprior, prior_sigma, num_iterations=4,
@@ -188,8 +190,6 @@ class DopplerInversion:
 		return Sd
 
 	
-
-
 	def full_inversion(self, peaks_assos, sigma=3):
 		"""
 		Performs inversion using all picked overtones. 

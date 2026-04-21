@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 from pyproj import Transformer
 from shapely.geometry import LineString
+from shapely.ops import nearest_points 
 import numpy as np
 
 # -------------------------
@@ -50,9 +51,9 @@ stations["Station_num"] = pd.to_numeric(
 
 # Select stations >= 1500
 stations_sel = stations[stations["Station_num"] >= 1500].copy()
-
-stations_color = stations_sel[stations_sel["Station_num"] < 1591].copy()
-stations_black = stations_sel[stations_sel["Station_num"] >= 1591].copy()
+mask_color = (stations_sel["Station_num"] < 1591) | (stations_sel["Station_num"] == 5575)
+stations_color = stations_sel[mask_color].copy()
+stations_black = stations_sel[~mask_color].copy()
 
 # -------------------------
 # READ STREAMS
@@ -84,6 +85,37 @@ stations_color["dist_group"] = pd.cut(
 )
 
 # -------------------------
+# CREATE LINES TO RIVER  <-- ADDED BLOCK
+# -------------------------
+river_geom = nenana.geometry.iloc[0]
+
+line_geoms = []
+line_colors = []
+
+for _, row in stations_color.iterrows():
+    station_point = row.geometry
+
+    # nearest point on river
+    nearest_on_river = nearest_points(station_point, river_geom)[1]
+
+    # line from station → river
+    line = LineString([station_point, nearest_on_river])
+    line_geoms.append(line)
+
+    # match color
+    group = row["dist_group"]
+    if pd.isna(group):
+        line_colors.append("#999999")
+    else:
+        line_colors.append(colors[labels.index(group)])
+
+lines_gdf = gpd.GeoDataFrame(
+    {"color": line_colors},
+    geometry=line_geoms,
+    crs=TARGET_CRS
+)
+
+# -------------------------
 # CREATE PERPENDICULAR LINE
 # -------------------------
 station_1521 = stations.loc[stations["Station_num"] == 1521]
@@ -92,25 +124,20 @@ station_1522 = stations.loc[stations["Station_num"] == 1522]
 p1 = station_1521.geometry.iloc[0]
 p2 = station_1522.geometry.iloc[0]
 
-# Direction vector between stations
 dx = p2.x - p1.x
 dy = p2.y - p1.y
 
-# Midpoint
 mx = (p1.x + p2.x) / 2
 my = (p1.y + p2.y) / 2
 
-# Perpendicular direction
 perp_dx = -dy
 perp_dy = dx
 
-# Normalize
 length = np.sqrt(perp_dx**2 + perp_dy**2)
 perp_dx /= length
 perp_dy /= length
 
-# Length of perpendicular segment (meters)
-half_length = 50  # 50 m on each side (adjust if desired)
+half_length = 50
 
 x1 = mx - perp_dx * half_length
 y1 = my - perp_dy * half_length
@@ -120,37 +147,52 @@ y2 = my + perp_dy * half_length
 perp_line = LineString([(x1, y1), (x2, y2)])
 perp_line_gdf = gpd.GeoDataFrame(geometry=[perp_line], crs=TARGET_CRS)
 
+tie_lines = False
 # -------------------------
 # COMPUTE ZOOM EXTENT
-# -------------------------
-xmin = 258.5 * 1000
+# ------------------------
+if tie_lines:
+    xmin = 258.2 * 1000
+else:
+    xmin = 258.5 * 1000
 xmax = 259.4 * 1000
 ymin = 1507.4 * 1000
 ymax = 1509.2 * 1000
-print(stations_sel[["Station", "Station_num"]].sort_values("Station_num"))
-print(stations_black[["Station", "Station_num"]])
 
 # -------------------------
 # PLOTTING
 # -------------------------
 fig, ax = plt.subplots()
+# draw grid beneath all other artists
+ax.set_axisbelow(True)
+ax.grid(True, linestyle='--', linewidth=0.5, color='gray', zorder=0)
 
-nenana.plot(ax=ax, color="blue", linewidth=3)
+nenana.plot(ax=ax, color="blue", linewidth=3, zorder=300)
 fault.plot(ax=ax, color="black", linewidth=1)
+if tie_lines:
+    # ---- PLOT LINES FIRST (so points sit on top) ----
+    for color in lines_gdf["color"].unique():
+        subset = lines_gdf[lines_gdf["color"] == color]
+        subset.plot(ax=ax, color=color, linewidth=0.8, alpha=0.8)
 
-# Colored stations (<1591)
-for label, color in zip(labels, colors):
-    subset = stations_color[stations_color["dist_group"] == label]
-    if not subset.empty:
-        subset.plot(ax=ax, color=color, markersize=25)
-
-# Black stations (>=1591)
+# Black stations
 if not stations_black.empty:
     stations_black.plot(ax=ax, color="black", markersize=25)
 
-# Plot perpendicular line
+# Perpendicular line
 if perp_line_gdf is not None:
     perp_line_gdf.plot(ax=ax, color="black", linewidth=1)
+
+# Colored stations (plot on top)
+for label, color in zip(labels, colors):
+    subset = stations_color[stations_color["dist_group"] == label]
+    if not subset.empty:
+        subset.plot(
+            ax=ax,
+            color=color,
+            markersize=25,
+            zorder=300,
+        )
 
 # Zoom
 ax.set_xlim(xmin, xmax)
@@ -158,7 +200,7 @@ ax.set_ylim(ymin, ymax)
 ax.set_aspect("equal")
 
 # -------------------------
-# AXIS TICKS (lat/lon labels)
+# AXIS TICKS
 # -------------------------
 transformer = Transformer.from_crs(TARGET_CRS, "EPSG:4326", always_xy=True)
 
@@ -193,7 +235,7 @@ ax.set_xlabel("Longitude", fontsize='x-large')
 ax.set_ylabel("Latitude", fontsize='x-large')
 
 ax.tick_params(direction="out", length=6, width=1)
-ax.grid()
+
 
 plt.tight_layout()
 plt.show()

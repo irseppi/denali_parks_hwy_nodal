@@ -1,8 +1,10 @@
+import lts_array as lts_array
 from waveform_collection import gather_waveforms
 from obspy.core import UTCDateTime
 from obspy.geodetics.base import gps2dist_azimuth
 from array_processing.tools.plotting import array_plot
 from lts_array import ltsva
+import numpy as np
 import os
 import matplotlib.pyplot as plt
 
@@ -31,7 +33,7 @@ blast_coords = [
     (-148.67, 63.95),
     (-148.74, 63.99)
 ]
-
+vel_array = []
 for i, start_time in enumerate(start_times):
     # Data collection parameters
     SOURCE = 'IRIS'
@@ -43,7 +45,7 @@ for i, start_time in enumerate(start_times):
     END = START + 10 * 60  # 10 minutes after START
 
     # Filtering
-    FMIN = 1  # [Hz]
+    FMIN = 0.5  # [Hz]
     FMAX = 3  # [Hz]
 
     # Array processing
@@ -64,11 +66,19 @@ for i, start_time in enumerate(start_times):
     vel, baz, t, mdccm, stdict, sigma_tau, conf_int_vel, conf_int_baz = ltsva(
         st, latlist, lonlist, WINLEN, WINOVER, alpha=1
     )
+    #find all the index values where the mdccm is higher than 0.9
 
+    high_mdccm_indices = np.where(mdccm>0.8)[0]
+    #now extract the velocities that go with those indices
+    high_velocities = vel[high_mdccm_indices]
+    print(high_velocities)
+    print("Velocity: ", np.nanmedian(high_velocities) * 1000)
+    vel_array.append(np.nanmedian(high_velocities) * 1000)
     # Plot
     fig, axs = array_plot(st, t, mdccm, vel, baz, ccmplot=True)
     # blast_coords is a list of (lon, lat) tuples; use those values for target location
     true_baz = gps2dist_azimuth(latlist[0], lonlist[0], blast_coords[i][1], blast_coords[i][0])[1]
+    print(true_baz)
     axs[3].axhline(true_baz, zorder=-5, color='gray', linestyle='--')
 
 
@@ -77,3 +87,5 @@ for i, start_time in enumerate(start_times):
     fname = os.path.join(out_dir, f"i53_healy_blast_{START.strftime('%Y%m%d_%H%M')}.pdf")
     fig.savefig(fname, dpi=300, bbox_inches='tight')
     plt.close(fig)
+
+print("All velocities: ", vel_array)

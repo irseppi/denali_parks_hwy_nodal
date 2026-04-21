@@ -1,14 +1,10 @@
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import xml.etree.ElementTree as ET
 
-from matplotlib import pyplot as plt
-from datetime import datetime
 from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor
+from matplotlib import pyplot as plt
 from soundscape_psd_functions import parse_xml_file, load_stations_for_distance_calculation, median_data, station_low_noise_med_per_freq
-
 
 OUTPUT_csv = "data/stations_dist2river.csv"
 if not Path(OUTPUT_csv).exists():
@@ -61,10 +57,13 @@ seismo_data = pd.read_csv(OUTPUT_csv)
 # Select stations >= 1500 and their distances to Nenana (exclude NaNs)
 seismo_data['Station_num'] = pd.to_numeric(seismo_data['Station'], errors='coerce')
 mask = (
-    (seismo_data['Station_num'] >= 1500) &
-    (seismo_data['Station_num'] <= 1590) &
-    seismo_data['dist_to_nenana_km'].notna()
-)
+    (
+        (seismo_data['Station_num'] >= 1500) &
+        (seismo_data['Station_num'] <= 1590)
+    ) |
+    (seismo_data['Station_num'] == 5575)
+) & seismo_data['dist_to_nenana_km'].notna()
+
 selected = seismo_data.loc[mask]
 
 # stations as strings (matching later use) and distances as numeric array
@@ -76,9 +75,6 @@ distances = selected['dist_to_nenana_km'].values
 station_freqs = {}
 station_powers = {}
 
-#with ProcessPoolExecutor() as executor:
-#    for station, freqs, powers in executor.map(parse_xml_file, stations):
-        #f, p = median_data(freqs, powers)
 low = [False,True]
 mad_yn = [False,True]
 for low_noise in low:

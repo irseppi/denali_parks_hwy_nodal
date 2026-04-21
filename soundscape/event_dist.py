@@ -1,17 +1,22 @@
 # ===============================
 # Distance Calculations Using UTM
 # ===============================
-
 import math
 import pyproj
 import numpy as np
 import pandas as pd
 
+from obspy.clients.fdsn import Client
+from obspy.geodetics.base import gps2dist_azimuth
+
+
+# Define the ellipsoid (WGS84 is standard for GPS)
+geod = pyproj.Geod(ellps='WGS84')
+
 # ---------------------------------
 # UTM Projection (Zone 6, WGS84)
 # ---------------------------------
 utm_proj = pyproj.Proj(proj="utm", zone=6, ellps="WGS84")
-
 
 # ---------------------------------
 # Helper Functions
@@ -57,6 +62,36 @@ print("B1:", station_utm_distance_km(63.982154, -149.121513, 63.98, -148.66))
 print("B2:", station_utm_distance_km(63.982154, -149.121513, 63.97, -148.68))
 print("B3:", station_utm_distance_km(63.4056, -148.8602, 64.01, -148.76))
 
+# ==========================================
+#  Mining Blast to I53 Distance Checks
+# ==========================================
+
+# Initialize the client (e.g., IRIS)
+client = Client("IRIS")
+
+# Data collection parameters
+NETWORK = 'IM'
+STATION = 'I53H?'
+LOCATION = '*'
+CHANNEL = 'BDF'
+
+# Get the inventory
+inv = client.get_stations(network=NETWORK, station=STATION, 
+                          location=LOCATION, channel=CHANNEL, 
+                          level="station")
+dist_array = []
+baz_array = []
+for network in inv:
+    for station in network:
+        dist = station_utm_distance_km(station.latitude, station.longitude,
+                                       64.01, -148.76)
+        _,_,back_az = gps2dist_azimuth(64.01, -148.76, station.latitude, station.longitude)
+        dist_array.append(dist)
+        baz_array.append(back_az)
+
+print(f"Station {station.code} distance (km) to B3 explosion (UTM):")
+print("Median distance:", np.median(dist_array))
+print("Median back azimuth:", np.median(baz_array))
 
 # ==========================================
 # Load Seismometer Data
@@ -83,14 +118,18 @@ seismo_y = seismo_utm[:, 1]
 # ==========================================
 blast_lat = 63.9901
 blast_lon = -148.7392
+blast_lat = 64.01
+blast_lon = -148.76
 blast_x, blast_y = latlon_to_utm(blast_lat, blast_lon)
 
 # Vectorized distance computation
 dists_km = np.hypot(seismo_x - blast_x, seismo_y - blast_y) / 1000.0
 
 min_idx = int(np.argmin(dists_km))
+_,_,back_az = gps2dist_azimuth(blast_lat, blast_lon, seismo_lat[min_idx], seismo_lon[min_idx])
 print(f"Closest station to blast: {stations.iloc[min_idx]}, "
-      f"Distance: {dists_km[min_idx]:.3f} km \n")
+      f"Distance: {dists_km[min_idx]:.3f} km \n"
+      f"Back azimuth: {back_az:.2f} degrees \n")
 
 
 # Station 1248 to blast

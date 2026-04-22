@@ -66,7 +66,7 @@ def download_waveforms(download_start_time, download_end_time, download_window,t
             gc.collect()
 
 
-BASE_DIR = "/scratch/naalexeev/NODAL/"
+BASE_DIR = "./data/"
 NUM_THREADS = 1
 make_base_dir(BASE_DIR)
 

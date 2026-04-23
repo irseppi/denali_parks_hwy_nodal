@@ -13,7 +13,7 @@ for li in file_in.readlines():
     flight_num = text[1]
     equip = text[10]
     sta = text[9]
-    flight_data = pd.read_csv('./nodal_data/flightradar24/' + date + '_flights.csv', sep=",")
+    flight_data = pd.read_csv(f'./nodal_data/flightradar24/{date}_flights.csv', sep=",")
     flight = flight_data['flight_id']
     tailnumber = flight_data['aircraft_id']
 
@@ -25,8 +25,9 @@ for li in file_in.readlines():
     folder_spec = equip + '_spec_c'
     exist_dir = f'./nodal_data/plane_info/inverse_final_database_NGT/'
     exist_dir += f'{folder_spec}/2019-0{date[5]}-{date[6:8]}/{flight_num}/{sta}/'
+
     if os.path.exists(exist_dir):
-        flight_data = pd.read_csv('./nodal_data/flightradar24/' + date + '_flights.csv', sep=",")
+        flight_data = pd.read_csv(f'./nodal_data/flightradar24/{date}_flights.csv', sep=",")
         flight = flight_data['flight_id']
         flight = flight.values.tolist()
         tailnumber = flight_data['aircraft_id']

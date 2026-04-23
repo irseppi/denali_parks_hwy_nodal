@@ -1,30 +1,24 @@
 import numpy as np
-import obspy
+import sys
+from pathlib import Path
 from matplotlib import pyplot as plt
-from datetime import datetime, timezone
-from src.doppler_funcs import calc_ft, invert_f
 from scipy.signal import spectrogram
-from src.main_inv_fig_functions import  remove_median
 
+
+# --- Fix sys.path ---
+repo_root = Path(__file__).resolve().parents[3]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
+# --- NOW imports will work ---
+from src.doppler_funcs import calc_ft, invert_f, load_waveform
+from src.main_inv_fig_functions import remove_median
+
+STATION = 1173
 c = 320
-start_time = 1550158642.26246
-ground_truth_time = 1550158750.7401662 - start_time
+crossing_time = 1550158642.26246 + 120
 
-ht = datetime.fromtimestamp(start_time, tz=timezone.utc)                      
-h = ht.hour
-mins = ht.minute
-secs = ht.second
-month = ht.month
-day = ht.day
-h_u = str(h+1)
-
-p = "/scratch/naalexeev/NODAL/2019-0"+str(month)+"-"+str(day)+"T"+str(h)+":00:00.000000Z.2019-0"+str(month)+"-"+str(day)+"T"+str(h_u)+":00:00.000000Z.1173.mseed"
-tr = obspy.read(p)
-tr[2].trim(tr[2].stats.starttime + (mins * 60) + secs , tr[2].stats.starttime + (mins * 60) + secs + 240)
-data = tr[2][:]
-fs = int(tr[2].stats.sampling_rate)
-title = f'{tr[2].stats.network}.{tr[2].stats.station}.{tr[2].stats.location}.{tr[2].stats.channel} − starting {tr[2].stats["starttime"]}'						
-t_wf = tr[2].times()
+data, fs, t_wf, title = load_waveform(STATION, crossing_time, spec_window=120)
 
 # Compute spectrogram
 frequencies, times, Sxx = spectrogram(data, fs, scaling='density', nperseg=fs, noverlap=fs * .9, detrend = 'constant') 

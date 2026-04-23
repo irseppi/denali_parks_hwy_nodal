@@ -5,6 +5,8 @@ import numpy as np
 import numpy.linalg as la
 import pandas as pd
 import math
+from obspy.core import UTCDateTime
+from obspy.clients.fdsn import Client
 from pathlib import Path
 from pyproj import Proj
 from datetime import datetime, timezone
@@ -1005,14 +1007,14 @@ def load_waveform(sta, start_time, spec_window=120):
 
 	Args:
 		sta (str): Station code.
-		start_time (float): Start time in seconds since the epoch.
+		start_time (float): Acoustic wave arrival time in seconds since the epoch.
 		spec_window (int): Time window in seconds to trim the waveform data, default is 120 seconds.
 
 	Returns:
 		tuple: A tuple containing the waveform data, sampling frequency, time data correlating to waveform, and title
 	"""
 	
-	ht = datetime.fromtimestamp(start_time + spec_window, tz=timezone.utc)
+	ht = datetime.fromtimestamp(start_time, tz=timezone.utc)
 
 	h = ht.hour
 	mins = ht.minute
@@ -1020,57 +1022,25 @@ def load_waveform(sta, start_time, spec_window=120):
 	month = ht.month
 	day = ht.day
 
-	h_u = str(h + 1)
-	if h < 23:
-		day2 = str(day)
-		if h < 10:
-			h_u = '0' + str(h + 1)
-			h = '0' + str(h)
-		else:
-			h_u = str(h + 1)
-			h = str(h)
-	else:
-		h_u = '00'
-		day2 = str(day + 1)
-	if len(str(day)) == 1:
-		day = '0' + str(day)
-		day2 = day
+	# Download waveform data from IRIS PH5WS
+	client = Client(
+		"http://service.iris.edu",
+		service_mappings={
+			"dataselect": "http://service.iris.edu/ph5ws/dataselect/1"
+		}
+	)
+	starttime = UTCDateTime(2019, month, day, h, mins, secs) - spec_window
+	endtime = starttime + spec_window
+	tr = client.get_waveforms("ZE", str(sta), "*", "DPZ", starttime, endtime)
 
-	waveform1 = "/scratch/naalexeev/NODAL/2019-0" + str(month) + "-" + str(day) + "T" + str(h) + ":00:00.000000Z.2019-0" + str(month) + "-" + str(day2) + "T" + str(h_u) + ":00:00.000000Z." + str(sta) + ".mseed"
-	waveform2 = "/scratch/irseppi/500sps/2019_0" + str(month) + "_" + str(day) + "/ZE_" + str(sta) + "_DPZ.msd"
-	
-	if Path(waveform1).exists():
-		tr = obspy.read(waveform1)
-		# Trim all traces in the Stream object
-		for trace in tr:
-			trace.trim(trace.stats.starttime + (mins * 60) + secs - spec_window,
-					trace.stats.starttime + (mins * 60) + secs + spec_window)
-		data = tr[2][:]
-		fs = int(tr[2].stats.sampling_rate)
-		title = f'{tr[2].stats.network}.{tr[2].stats.station}.{tr[2].stats.location}.{tr[2].stats.channel} − starting {tr[2].stats["starttime"]}'
-		t_wf = tr[2].times()
-		if len(data) == 0:
-			data = tr[1][:]
-			fs = int(tr[1].stats.sampling_rate)
-			title = f'{tr[1].stats.network}.{tr[1].stats.station}.{tr[1].stats.location}.{tr[1].stats.channel} − starting {tr[1].stats["starttime"]}'
-			t_wf = tr[1].times()
-			if len(data) == 0:
-				data = tr[0][:]
-				fs = int(tr[0].stats.sampling_rate)
-				title = f'{tr[0].stats.network}.{tr[0].stats.station}.{tr[0].stats.location}.{tr[0].stats.channel} − starting {tr[0].stats["starttime"]}'                        
-				t_wf = tr[0].times()
-		return data, fs, t_wf, title
-	elif Path(waveform2).exists():
-		tr = obspy.read(waveform2)
-		tr[0].trim(tr[0].stats.starttime + (float(h) * 3600) + (mins * 60) + secs - spec_window,
-					tr[0].stats.starttime + (float(h) * 3600) + (mins * 60) + secs + spec_window)
-		data = tr[0][:]
-		fs = int(tr[0].stats.sampling_rate)
-		title = f'{tr[0].stats.network}.{tr[0].stats.station}.{tr[0].stats.location}.{tr[0].stats.channel} − starting {tr[0].stats["starttime"]}'                        
-		t_wf = tr[0].times()
-		return data, fs, t_wf, title
-	else:
-		return None, None, None, None
+	data = tr[2][:]
+	fs = int(tr[2].stats.sampling_rate)
+	title = f'{tr[2].stats.network}.{tr[2].stats.station}.{tr[2].stats.location}.{tr[2].stats.channel} − starting {tr[2].stats["starttime"]}'
+	t_wf = tr[2].times()
+
+
+	return data, fs, t_wf, title
+
 
 	
 

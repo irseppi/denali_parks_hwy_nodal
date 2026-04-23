@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
 from scipy.signal import spectrogram
-from src.main_inv_fig_functions import remove_median, get_auto_picks_full
-from src.doppler_funcs import invert_f, calc_ft, full_inversion
 from obspy.clients.fdsn import Client
 from obspy.core import UTCDateTime
 from matplotlib.ticker import MaxNLocator
+from src.doppler_funcs import invert_f, calc_ft, full_inversion
+from src.main_inv_fig_functions import remove_median, get_auto_picks_full
 
 # Interactive picking of points on spectrogram for overtone curve
 def pick_points_on_spectrogram(

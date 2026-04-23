@@ -106,7 +106,7 @@ def get_speed_of_sound(alt, closest_time, UTM_x_m, UTM_y_m):
 	# Convert UTM coordinates to latitude and longitude
 	lon, lat = utm_proj(UTM_x_m, UTM_y_m, inverse=True)
 
-	input_files = '/scratch/irseppi/nodal_data/plane_info/atmosphere_data/' + str(closest_time) + '_' + str(lat) + '_' + str(lon) + '.dat'
+	input_files = f'./atm_data/{closest_time}_{lat}_{lon}.dat'
 
 	if Path(input_files).exists():
 		with open(input_files, 'r') as file:
@@ -181,7 +181,7 @@ def get_sta_elevation(sta):
 	"""
 
 	elev = 0
-	seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal/input/parkshwy_nodes.txt', sep="|")
+	seismo_data = pd.read_csv('./denali_parks_hwy_nodal/input/parkshwy_nodes.txt', sep="|")
 	stations = seismo_data['Station']
 	elevations = seismo_data['Elevation']
 
@@ -849,93 +849,6 @@ def full_inversion(fobs, tobs, peaks_assos, mprior, sigma_prior, num_iterations 
 	del G, G_hold, Gm, H, dm, gamma, fpred, m, Cd, Cd0, cprior, cprior0
 	return mnew, Cpost0, Cpost, mnew[4:], F_m
 
-########################################################################################################################################################################################
-
-def flight_list(month1, month2, first_day, last_day):
-	"""
-	Load flight files based on the specified months and days.
-
-	Args:
-		month1 (int): The starting month.
-		month2 (int): The ending month.
-		first_day (int): The first day of the range.
-		last_day (int): The last day of the range.
-
-		for only Feb use month1 = 2 and month2 = 3
-		for only March use month1 = 3 and month2 = 4
-		for Fab and March use month1 = 2 and month2 = 4
-		for entire deployment use month1 = 2,first_day = 11,month2 = 4, and last_day = 27
-
-	Returns:
-		tuple: A tuple containing two lists - flight_files and filenames.
-			   flight_files: A list of file paths for the flight files.
-			   filenames: A list of filenames for the flight files.
-	"""
-	flight_files = []
-	filenames = []
-
-	for month in range(month1, month2):
-		if month1 == 2 and month2 == 4:
-			if month == 2:
-				month = '02'
-				for day in range(first_day, 29):
-					day = str(day)
-					directory = '/scratch/irseppi/nodal_data/flightradar24/2019' + month + day + '_positions'
-					for filename in os.listdir(directory):
-						filenames.append(filename)
-						f = os.path.join(directory, filename)
-						if os.path.isfile(f):
-							flight_files.append(f)
-			elif month == 3:
-				month = '03'
-				for day in range(1, last_day):
-					if day < 10:
-						day = '0' + str(day)
-						directory = '/scratch/irseppi/nodal_data/flightradar24/2019' + month + day + '_positions'
-						for filename in os.listdir(directory):
-							filenames.append(filename)
-							f = os.path.join(directory, filename)
-							if os.path.isfile(f):
-								flight_files.append(f)
-					else:
-						day = str(day)
-						directory = '/scratch/irseppi/nodal_data/flightradar24/2019' + month + day + '_positions'
-						for filename in os.listdir(directory):
-							filenames.append(filename)
-							f = os.path.join(directory, filename)
-							if os.path.isfile(f):
-								flight_files.append(f)
-		elif month1 == 2 and month2 == 3:
-			month = '02'
-			for day in range(first_day, last_day):
-				day = str(day)
-				directory = '/scratch/irseppi/nodal_data/flightradar24/2019' + month + day + '_positions'
-				for filename in os.listdir(directory):
-					filenames.append(filename)
-					f = os.path.join(directory, filename)
-					if os.path.isfile(f):
-						flight_files.append(f)
-		elif month1 == 3 and month2 == 4:
-			month = '03'
-			for day in range(first_day, last_day):
-				if day < 10:
-					day = '0' + str(day)
-					directory = '/scratch/irseppi/nodal_data/flightradar24/2019' + month + day + '_positions'
-					for filename in os.listdir(directory):
-						filenames.append(filename)
-						f = os.path.join(directory, filename)
-						if os.path.isfile(f):
-							flight_files.append(f)
-				else:
-					day = str(day)
-					directory = '/scratch/irseppi/nodal_data/flightradar24/2019' + month + day + '_positions'
-					for filename in os.listdir(directory):
-						filenames.append(filename)
-						f = os.path.join(directory, filename)
-						if os.path.isfile(f):
-							flight_files.append(f)
-	return flight_files, filenames
-
 ########################################################################################################################################################################################################
 
 def load_flight_file(flight_file, filename):
@@ -976,32 +889,7 @@ def load_flight_file(flight_file, filename):
 
 #########################################################################################################################################################################################################
 
-def get_equip(date, flight_num):
-	"""
-	Retrieve the equipment type for a specific flight number on a given date.
-
-	Args:
-		date (str): Date in the format 'YYYYMMDD'.
-		flight_num (str): Flight number to search for.
-
-	Returns:
-		str: Equipment type associated with the flight number.
-	"""
-
-	equip_file = '/scratch/irseppi/nodal_data/flightradar24/' + str(date) + '_flights.csv'
-	equip_data = pd.read_csv(equip_file, sep=",")
-	equip_list = equip_data['equip']
-	flight_list = equip_data['flight_id']
-
-	for i_e in range(len(equip_list)):
-		if str(flight_num) == str(flight_list[i_e]):
-			equip = equip_list[i_e]
-			break
-	return equip
-
-#########################################################################################################################################################################################################
-
-def load_waveform(sta, start_time, spec_window=120):
+def load_waveform(sta, start_time, spec_window=120, component="Z"):
 	"""
 	Load waveform data for a specific station and time window.
 
@@ -1030,18 +918,17 @@ def load_waveform(sta, start_time, spec_window=120):
 		}
 	)
 	starttime = UTCDateTime(2019, month, day, h, mins, secs) - spec_window
-	endtime = starttime + spec_window
-	tr = client.get_waveforms("ZE", str(sta), "*", "DPZ", starttime, endtime)
+	endtime = starttime + spec_window*2
 
-	data = tr[2][:]
-	fs = int(tr[2].stats.sampling_rate)
-	title = f'{tr[2].stats.network}.{tr[2].stats.station}.{tr[2].stats.location}.{tr[2].stats.channel} − starting {tr[2].stats["starttime"]}'
-	t_wf = tr[2].times()
+	tr = client.get_waveforms("ZE", str(sta), "*", f'DP{component}', starttime, endtime)
+	tr = tr[0]
+	data = tr.data
+	fs = int(tr.stats.sampling_rate)
+	title = f'{tr.stats.network}.{tr.stats.station}.{tr.stats.location}.{tr.stats.channel} − starting {tr.stats["starttime"]}'
+	t_wf = tr.times()
 
 
 	return data, fs, t_wf, title
 
-
-	
 
 #########################################################################################################################################################################################################

@@ -1,15 +1,23 @@
+import sys
 import numpy as np
+import matplotlib.pyplot as plt
 
 from pathlib import Path
-import matplotlib.pyplot as plt
-import obspy
-from scipy.signal import spectrogram
-from src.main_inv_fig_functions import remove_median, get_auto_picks_full
-from src.doppler_funcs import invert_f, calc_ft, full_inversion
-from obspy.clients.fdsn import Client
 from obspy.core import UTCDateTime
+from scipy.signal import spectrogram
 from matplotlib.ticker import MaxNLocator
+# --- Fix sys.path ---
+repo_root = Path(__file__).resolve().parents[1]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+from src.doppler_funcs import invert_f, calc_ft, full_inversion
+from src.main_inv_fig_functions import remove_median, get_auto_picks_full
 
+
+
+
+
+from src.doppler_funcs import load_waveform
 # Interactive picking of points on spectrogram for overtone curve
 def pick_points_on_spectrogram(times, frequencies, spec, vmin, vmax, prompt, axvline=None):
     coords = []
@@ -61,21 +69,10 @@ def pick_time_window(times, frequencies, spec, vmin, vmax, tobs, fobs):
     plt.show(block=True)
     return set_time
 
-folder = '/scratch/irseppi/500sps/2019_02_22/'
+epoch_ts = (UTCDateTime(2019, 2, 22, 19, 40, 0) + 1740).timestamp
 
-start, end = [0,1700,4170], [900,1780,5270]
-labels = ['Aircraft', 'Car', 'Train']
-
-file = folder + f'ZE_1245_DPZ.msd'
-if Path(file).exists():
-    tr = obspy.read(file)
-    tr[0].trim(tr[0].stats.starttime + (19 * 60 * 60) +(40 * 60) + 1700 ,tr[0].stats.starttime  + (19 * 60 * 60) +(40 * 60) + 1780)
-    
-    data = tr[0][:]
-    t_wf = tr[0].times()
-    fs = int(tr[0].stats.sampling_rate)
-    title = f'{tr[0].stats.network}.{tr[0].stats.station}.{tr[0].stats.location}.{tr[0].stats.channel} − starting {tr[0].stats["starttime"]}'
-
+data, fs, t_wf, title = load_waveform(1245, epoch_ts, 40)
+print(fs)
 # Compute spectrogram
 WIN_LEN = 1  # window length, in s
 NPER = int(WIN_LEN * fs)
@@ -97,7 +94,7 @@ print(coords_array)
 
 
 # Estimate initial model parameters from picked points
-c = 320 #11.1  # Speed of sound (m/s)
+c = 320 # Speed of sound (m/s)
 fa, fr = np.max(coords_array[:, 1]), np.min(coords_array[:, 1])  # Max/min frequency
 fm = (fa + fr) / 2
 closest_index = np.argmin(np.abs(coords_array[:, 1] - fm))

@@ -848,44 +848,6 @@ def full_inversion(fobs, tobs, peaks_assos, mprior, sigma_prior, num_iterations 
 	del G, G_hold, Gm, H, dm, gamma, fpred, m, Cd, Cd0, cprior, cprior0
 	return mnew, Cpost0, Cpost, mnew[4:], F_m
 
-########################################################################################################################################################################################################
-
-def load_flight_file(flight_file, filename):
-	"""
-	Load flight data from a CSV file and extract relevant columns.
-
-	Args:
-		flight_file (str): Path to the flight data CSV file.
-		filename (str): Name of the flight file for extracting flight number and date.
-
-	Returns:
-		tuple: A tuple containing the following elements:
-			- flight_utm_x_km (numpy.ndarray): UTM x coordinates of the flight path in kilometers.
-			- flight_utm_y_km (numpy.ndarray): UTM y coordinates of the flight path in kilometers.
-			- flight_path (numpy.ndarray): 2D array of flight path coordinates in kilometers.
-			- timestamp (pandas.Series): Timestamps of the flight data.
-			- alt (pandas.Series): Altitudes of the flight data.
-			- speed (pandas.Series): Speeds of the flight data.
-			- head (pandas.Series): Headings of the flight data.
-			- flight_num (str): Flight number extracted from the filename.
-			- date (str): Date extracted from the filename.
-	"""
-	
-	flight_data = pd.read_csv(flight_file, sep=",") 
-	flight_latitudes = flight_data['latitude']
-	flight_longitudes = flight_data['longitude']
-	timestamp = flight_data['snapshot_id']  
-	alt = flight_data['altitude']
-	speed = flight_data['speed']
-	head = flight_data['heading']
-	fname = filename	
-	flight_num = fname[9:18]
-	date = fname[0:8]
-
-	flight_utm_x_km, flight_utm_y_km, flight_path = flight_lat_lon_to_utm(flight_latitudes, flight_longitudes)
-
-	return flight_utm_x_km, flight_utm_y_km, flight_path, timestamp, alt, speed, head, flight_num, date
-
 #########################################################################################################################################################################################################
 
 def load_waveform(sta, start_time, spec_window=120, component="Z"):

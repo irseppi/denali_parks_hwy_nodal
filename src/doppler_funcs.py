@@ -36,30 +36,6 @@ def make_base_dir(base_dir):
 
 #######################################################################################################################
 
-def add_wind_vector(zonal_winds, meridional_winds):
-	"""
-	Adds two vectors given their magnitudes and directions (angles in degrees, clockwise from the positive y-axis).
-
-	Args:
-		zonal_winds (float): Magnitude of winds eastward.
-		meridional_winds (float): Magnitude of winds northward.
-
-	Returns:
-		tuple: A tuple containing the magnitude and direction (angle in degrees, clockwise from North).
-	"""
-
-	# Calculate magnitude of the resultant vector
-	resultant_magnitude = math.sqrt(zonal_winds **2 + meridional_winds **2)
-
-	# Calculate direction (angle) of the resultant vector
-	resultant_angle_rad = math.atan2(meridional_winds,zonal_winds)                                 							
-	resultant_angle_deg = (90 - math.degrees(resultant_angle_rad)) % 360
-
-	return resultant_magnitude, resultant_angle_deg
-
-
-#######################################################################################################################
-
 def get_speed_of_sound(alt, closest_time, UTM_x_m, UTM_y_m):
 	"""
 	Calculate the speed of sound at a given altitude using atmospheric data. 

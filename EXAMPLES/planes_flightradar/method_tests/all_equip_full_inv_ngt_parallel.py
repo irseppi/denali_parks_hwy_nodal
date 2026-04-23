@@ -87,7 +87,7 @@ def inversion_process(line, tracer):
     plot_results(equip, month, day, flight_num, sta, closest_time, start_time, v0, l, t0, c, f0_array, covm0, F_m)
 
 # Loop through each station in text file that we already know comes within 2km of the nodes
-with open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/node_crossings_db_UTM.txt', 'r') as file_in:
+with open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/node_crossings_db_UTM.txt', 'r') as file_in:
     lines = file_in.readlines()
     tracer = [i for i in range(len(lines))]
     with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:

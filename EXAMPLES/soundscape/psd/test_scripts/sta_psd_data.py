@@ -25,7 +25,7 @@ def process_xml(xml_file):
     #plt.savefig("/scratch/irseppi/nodal_data/psd_noise/psd_"+station+".png")
     plt.close()
 
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/parkshwy_nodes.txt', sep="|")
+seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/parkshwy_nodes.txt', sep="|")
 stations = seismo_data['Station']
 
 for station in stations:

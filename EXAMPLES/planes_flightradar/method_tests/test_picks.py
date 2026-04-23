@@ -24,7 +24,7 @@ utm_proj = Proj(proj='utm', zone='6', ellps='WGS84')
 rerun_fig = True #False #Flag rerun the figures without saving the inversion results = True
 
 # Loop through each station in text file that we already know comes within 2km of the nodes
-file_in = open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/node_crossings_db_UTM.txt','r')
+file_in = open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/node_crossings_db_UTM.txt','r')
 
 for li in file_in.readlines():
     text = li.split(',')
@@ -40,7 +40,7 @@ for li in file_in.readlines():
     equip = text[10]
     if equip != 'DH8A' and int(sta) != 1263:
         continue
-    spec_dir = '/home/irseppi/REPOSITORIES/parkshwynodal_supp/output/' + equip + '_data_picks/inversepicks/2019-0'+str(date[5])+'-'+str(date[6:8])+'/'+str(flight_num)+'/'+str(sta)+'/'+str(closest_time)+'_'+str(flight_num)+'.csv'
+    spec_dir = './REPOSITORIES/denali_parks_hwy_nodal_supp/output/' + equip + '_data_picks/inversepicks/2019-0'+str(date[5])+'-'+str(date[6:8])+'/'+str(flight_num)+'/'+str(sta)+'/'+str(closest_time)+'_'+str(flight_num)+'.csv'
     
     if os.path.exists(spec_dir): # and rerun_fig == False:
         go = True
@@ -98,7 +98,7 @@ for li in file_in.readlines():
     sound_speed = c
     tarrive = calc_time(closest_time,dist_m,alt,c) 
 
-    file_name = '/home/irseppi/REPOSITORIES/parkshwynodal_supp/output/' + equip + '_data_picks/inversepicks/2019-0'+str(date[5])+'-'+str(date[6:8])+'/'+str(flight_num)+'/'+str(sta)+'/'+str(closest_time)+'_'+str(flight_num)+'.csv'   
+    file_name = './REPOSITORIES/denali_parks_hwy_nodal_supp/output/' + equip + '_data_picks/inversepicks/2019-0'+str(date[5])+'-'+str(date[6:8])+'/'+str(flight_num)+'/'+str(sta)+'/'+str(closest_time)+'_'+str(flight_num)+'.csv'   
     if Path(file_name).exists():
         coords = []
         if Path(file_name).is_dir():

@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # Loop through each station in text file that we already know comes within 2km of the nodes
-file_in = open('/home/irseppi/REPOSITORIES/parkshwynodal/input/node_crossings_db_UTM.txt','r')
+file_in = open('./REPOSITORIES/denali_parks_hwy_nodal/input/node_crossings_db_UTM.txt','r')
 equip_count_dict = {}
 tail_dict = {}
 tail_num_dict = []

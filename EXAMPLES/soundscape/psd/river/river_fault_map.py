@@ -9,7 +9,7 @@ import numpy as np
 # -------------------------
 # PATHS AND CONSTANTS
 # -------------------------
-STATIONS_txt = "/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/full_nodes.txt"
+STATIONS_txt = "./REPOSITORIES/denali_parks_hwy_nodal_supp/input/full_nodes.txt"
 GDB_PATH = "data/river_data/hydrusm010g.gdb"
 STREAM_LAYER = "Stream"
 FAULT_SHP = "data/DenaliF_shp/DenaliF_spbtrace.shp"

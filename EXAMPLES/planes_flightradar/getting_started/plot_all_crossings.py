@@ -99,7 +99,7 @@ def load_plot_spectrogram(sta, date, flight_num, tarrive, closest_time):
     plot_spectrum(spec, frequencies, fs, middle_index, closest_time, sta, BASE_DIR)
     return BASE_DIR
 # Loop through each station in text file that we already know comes within 2km of the nodes
-file_in = open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/node_crossings_db_UTM.txt','r')
+file_in = open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/node_crossings_db_UTM.txt','r')
 sta_list = []
 date_list = []
 flight_list = []

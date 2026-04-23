@@ -77,7 +77,7 @@ def median_data(frequencies, powers):
         med_powers.append(np.median(freq_dict[f]))
     return list(freq_dict.keys()), med_powers
 
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/parkshwy_nodes.txt', sep="|")
+seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/parkshwy_nodes.txt', sep="|")
 stations = seismo_data['Station']
 
 color = np.zeros((len(stations), 125))

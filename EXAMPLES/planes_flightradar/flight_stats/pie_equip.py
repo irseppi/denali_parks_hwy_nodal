@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib.patches import Wedge
 import matplotlib.pyplot as plt
 
-infile = open('/home/irseppi/REPOSITORIES/parkshwynodal/input/node_crossings_db_UTM.txt', 'r')
+infile = open('./REPOSITORIES/denali_parks_hwy_nodal/input/node_crossings_db_UTM.txt', 'r')
 #outfile = open('output.csv', 'a')  # Open the file in append mode
 
 equip_counts = {}  # Define the "equip_counts" dictionary before the loop
@@ -42,7 +42,7 @@ equip_counts = {k: v for k, v in sorted(equip_counts.items(), key=lambda item: i
 # Define a color dictionary
 colors=[]
 #Read in color text file to get different flights to be diffrent colors on map
-with open('/home/irseppi/REPOSITORIES/parkshwynodal/input/colors.txt','r') as c_in:
+with open('./REPOSITORIES/denali_parks_hwy_nodal/input/colors.txt','r') as c_in:
 	for i, line in enumerate(c_in):
 		if (i + 1) % 9 == 0:
 			c = str(line[0:7])
@@ -163,5 +163,5 @@ for i, wedge in enumerate(wedges):
 		)
 axes[1].axis('equal')
 plt.subplots_adjust(hspace=0.05)
-plt.savefig('/home/irseppi/REPOSITORIES/parkshwynodal/pie_charts_equipment.png', dpi=2500, bbox_inches='tight')
+plt.savefig('./REPOSITORIES/denali_parks_hwy_nodal/pie_charts_equipment.png', dpi=2500, bbox_inches='tight')
 

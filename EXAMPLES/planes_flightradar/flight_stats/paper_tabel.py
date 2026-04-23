@@ -1,7 +1,7 @@
 import pandas as pd
 
 jets = False
-with open('/home/irseppi/REPOSITORIES/parkshwynodal/input/node_crossings_db_UTM.txt', 'r') as infile:
+with open('./REPOSITORIES/denali_parks_hwy_nodal/input/node_crossings_db_UTM.txt', 'r') as infile:
 	infile_lines = infile.readlines()
 if not jets:	
 	Equipment = ['DH8A', 'B190','BE20','PC12','DH3T','C208','AT73','SW4','C441','B18T','B350','BE10','AS50','R44','C185','PA31','DHC2','GA8','C180','C182','C206','C172','PA32','PA46','CH7B','PA30','C46','BE35','PA18','PA34']
@@ -151,7 +151,7 @@ for eq in Equipment:
 final_table.write('Totals,' + ',' + ',' + ',' + ',' + ',' + str(total_flights) + ',' + str(total_inverted_flights) + ',' + str(total_crossings) + ',' + str(total_inverted_crossings) + ',' + str(total_tail_numbers) + ',' + str(total_inverted_tail_numbers) + ',' + str(total_nodes) +  ',' + str(total_inverted_nodes) + '\n')
 final_table.close()
 #In dataset not only inverted
-infile = open('/home/irseppi/REPOSITORIES/parkshwynodal/input/node_crossings_db_UTM.txt', 'r')
+infile = open('./REPOSITORIES/denali_parks_hwy_nodal/input/node_crossings_db_UTM.txt', 'r')
 Equipment = ['DH8A', 'B190','BE20','PC12','DH3T','C208','AT73','SW4','C441','B18T','B350','BE10','AS50','R44','C185','PA31','DHC2','GA8','C180','C182','C206','C172','PA32','PA46','CH7B','PA30','C46','BE35','PA18','PA34']
 Equipment_jet = ['B737','B738','B739','B77W','B772','B789','B788','B733','B763','A359','B77L','B744','E75S','B732','A332','B748','CRJ2']
 total_nan_crossings = 0
@@ -177,7 +177,7 @@ print('Total Prop Crossings: ' + str(prop_crossings))
 print('Total Jet Crossings: ' + str(total_jet_crossings))
 print('Total Crossings: ' + str(total_nan_crossings + prop_crossings + total_jet_crossings))
 #Inverted
-infile = open('/home/irseppi/REPOSITORIES/parkshwynodal/NGT_flight_param_inv_DB.txt', 'r')
+infile = open('./REPOSITORIES/denali_parks_hwy_nodal/NGT_flight_param_inv_DB.txt', 'r')
 Equipment = ['DH8A', 'B190','BE20','PC12','DH3T','C208','AT73','SW4','C441','B18T','B350','BE10','AS50','R44','C185','PA31','DHC2','GA8','C180','C182','C206','C172','PA32','PA46','CH7B','PA30','C46','BE35','PA18','PA34']
 Equipment_jet = ['B737','B738','B739','B77W','B772','B789','B788','B733','B763','A359','B77L','B744','E75S','B732','A332','B748','CRJ2']
 total_nan_crossings = 0

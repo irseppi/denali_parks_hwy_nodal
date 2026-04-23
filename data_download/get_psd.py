@@ -1,7 +1,7 @@
 from urllib.request import urlopen
 import pandas as pd
 
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/full_nodes.txt', sep="|")
+seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/full_nodes.txt', sep="|")
 stations = seismo_data['Station']
 channels = ['1', '2', 'Z']
 for channel in channels:

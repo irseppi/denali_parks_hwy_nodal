@@ -6,17 +6,17 @@ import pyproj
 utm_proj = pyproj.Proj(proj='utm', zone='6', ellps='WGS84')
 
 colors = []
-with open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/colors.txt','r') as c_in:
+with open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/colors.txt','r') as c_in:
 	for i, line in enumerate(c_in):
 		if (i + 1) % 9 == 0:
 			c = str(line[0:7])
 			colors.append(c)
 			
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/nodes_stations.txt', sep="|")
+seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/nodes_stations.txt', sep="|")
 seismo_lat = seismo_data['Latitude']
 seismo_lon = seismo_data['Longitude']
 
-file = open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/node_crossings_db_UTM.txt', 'r')
+file = open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/node_crossings_db_UTM.txt', 'r')
 
 equip_counts = {}  # Define the "equip_counts" dictionary before the loop
 for line in file:
@@ -33,7 +33,7 @@ colors_dict={}
 for i,labels in enumerate(equip_counts.keys()):
     colors_dict[labels] = colors[i]
 
-file = open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/node_crossings_db_UTM.txt', 'r')
+file = open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/node_crossings_db_UTM.txt', 'r')
 
 flight_num_hold = 0
 plt.figure(figsize=(6, 10))

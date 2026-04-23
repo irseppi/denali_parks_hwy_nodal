@@ -3,7 +3,7 @@ import pandas as pd
 
 from soundscape_psd_functions import parse_xml_file, median_data
 
-STATIONS_txt = "/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/full_nodes.txt"
+STATIONS_txt = "./REPOSITORIES/denali_parks_hwy_nodal_supp/input/full_nodes.txt"
 stations_df = pd.read_csv(STATIONS_txt, sep="|")
 
 stations = stations_df['Station'].tolist()

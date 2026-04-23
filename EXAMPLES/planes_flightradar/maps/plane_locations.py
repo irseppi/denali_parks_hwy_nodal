@@ -156,7 +156,7 @@ apro = input("Do you want to plot only timestamps that are 10km or less from the
 
 color=[]
 #Read in color text file to get different flights to be diffrent colors on map
-with open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/colors.txt','r') as c_in:
+with open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/colors.txt','r') as c_in:
 		for line in c_in:
 			c=str(line[0:7])
 			color.append(c)
@@ -166,7 +166,7 @@ close_flights=[]
 # Load and plot each flight path
 if apro =='y':
 	# Load the seismometer location data
-	seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/nodes_stations.txt', sep="|")
+	seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/nodes_stations.txt', sep="|")
 	seismo_latitudes = seismo_data['Latitude']
 	seismo_longitudes = seismo_data['Longitude']
 	seismo_stations = seismo_data['Latitude']

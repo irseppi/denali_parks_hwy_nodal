@@ -413,11 +413,11 @@ def delete_empty_file(file_path):
 
 ###############################################################################################################
 
-def remove_files_with_no_picks(base_dir='/home/irseppi/REPOSITORIES/parkshwynodal_supp/output/'):
+def remove_files_with_no_picks(base_dir='./REPOSITORIES/denali_parks_hwy_nodal_supp/output/'):
 	"""
 	Removes files that do not contain any data picks from users.
 	Args:
-		base_dir (str): The base directory where the files are located. Default is '/home/irseppi/REPOSITORIES/parkshwynodal_supp/output/'.
+		base_dir (str): The base directory where the files are located. Default is './REPOSITORIES/denali_parks_hwy_nodal_supp/output/'.
 	"""
 
 	# loop through the directories in the directory
@@ -442,11 +442,11 @@ def remove_files_with_no_picks(base_dir='/home/irseppi/REPOSITORIES/parkshwynoda
 
 ################################################################################################################
 
-def remove_dir_with_no_picks(base_dir='/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/Data_Picks/'):
+def remove_dir_with_no_picks(base_dir='./REPOSITORIES/denali_parks_hwy_nodal_supp/input/Data_Picks/'):
 	"""
 	Removes directories that do not contain any data picks from users.
 	Args:
-		base_dir (str): The base directory where the files are located. Default is '/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/Data_Picks/'.
+		base_dir (str): The base directory where the files are located. Default is './REPOSITORIES/denali_parks_hwy_nodal_supp/input/Data_Picks/'.
 	"""
 	for dir_name in os.listdir(base_dir):
 		dir_path = os.path.join(base_dir, dir_name)
@@ -466,7 +466,7 @@ def clean_inv_results():
 	"""
 
 	# specify the directory containing the files to be cleaned
-	dir_path = '/home/irseppi/REPOSITORIES/parkshwynodal_supp/output/inv_results_no_g_truth_320/'
+	dir_path = './REPOSITORIES/denali_parks_hwy_nodal_supp/output/inv_results_no_g_truth_320/'
 
 	# loop through the directories in the directory
 	for dir_name in os.listdir(dir_path):
@@ -650,7 +650,7 @@ def combine_text_files(input_files, output_file):
 					if line.strip():
 						outfile.write(line.rstrip('\n') + equip + ',\n')
 
-input_dir = '/home/irseppi/REPOSITORIES/parkshwynodal_supp/output/inv_results_ngt/'
+input_dir = './REPOSITORIES/denali_parks_hwy_nodal_supp/output/inv_results_ngt/'
 output_file = 'comb_output.txt'
 input_files = []
 

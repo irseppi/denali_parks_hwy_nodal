@@ -6,7 +6,7 @@ title_size = 20
 tick_size = 12
 text_size = 12
 
-file_in = open('/home/irseppi/REPOSITORIES/parkshwynodal/input/node_crossings_db_UTM.txt','r')
+file_in = open('./REPOSITORIES/denali_parks_hwy_nodal/input/node_crossings_db_UTM.txt','r')
 col_equip = []
 flight_nums = []
 tail = []
@@ -53,7 +53,7 @@ for i in range(0,2):
                 count1 += 1
         if i == 0:
             # Define the directory where your files are located
-            file = '/home/irseppi/REPOSITORIES/parkshwynodal/output/inv_results/' + eq + '_full_inv_results.txt' 
+            file = './REPOSITORIES/denali_parks_hwy_nodal/output/inv_results/' + eq + '_full_inv_results.txt' 
 
             with open(file, 'r') as f:
                 # Read the data from the file and append it to the list
@@ -93,7 +93,7 @@ for i in range(0,2):
                 equip_overtone_dict[eq].extend(data)
                 equip_count_dict[eq].extend([count1, count2])
         else:
-            file = '/home/irseppi/REPOSITORIES/parkshwynodal/NGT_flight_param_inv_DB.txt'
+            file = './REPOSITORIES/denali_parks_hwy_nodal/NGT_flight_param_inv_DB.txt'
             with open(file, 'r') as f:
                 # Read the data from the file and append it to the list
                 data = []

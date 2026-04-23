@@ -1,12 +1,14 @@
-import numpy as np
-import pandas as pd
 import os
 import sys
 import json
-from matplotlib import pyplot as plt
-from datetime import datetime, timezone
+import numpy as np
+import pandas as pd
+
 from pyproj import Proj
 from pathlib import Path
+from matplotlib import pyplot as plt
+from datetime import datetime, timezone
+
 # Ensure repository root is on sys.path so local package 'src' can be imported
 repo_root = Path(__file__).resolve().parents[3]
 if str(repo_root) not in sys.path:
@@ -14,8 +16,9 @@ if str(repo_root) not in sys.path:
 from src.doppler_funcs import speed_of_sound, add_wind_vector
 
 utm_proj = Proj(proj='utm', zone='6', ellps='WGS84')
+repo_root = './denali_parks_hwy_nodal/'
 
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal/input/parkshwy_nodes.txt', sep="|")
+seismo_data = pd.read_csv(f'{repo_root}input/parkshwy_nodes.txt', sep="|")
 seismo_latitudes = seismo_data['Latitude']
 seismo_longitudes = seismo_data['Longitude']
 sensor_elevations = seismo_data['Elevation']
@@ -27,7 +30,8 @@ air_c_array = []
 sta_temp_array = []
 sta_wind_array = []
 sta_c_array = []
-file_in = open('/home/irseppi/REPOSITORIES/parkshwynodal/input/node_crossings_db_UTM.txt','r')
+
+file_in = open(f'{repo_root}input/node_crossings_db_UTM.txt','r')
 for li in file_in.readlines():
     text = li.split(',')
     flight_num = text[1]
@@ -36,7 +40,9 @@ for li in file_in.readlines():
     time = float(text[5])
     start_time = time - 120
     equip = text[10]
-    if equip in ['B737', 'B738', 'B739', 'B77W', 'B772', 'B788', 'B789', 'B763', 'B744','B733','B732','B77L','B748','CRJ2', 'A332', 'A359', 'E75S']:
+    if equip in ['B737', 'B738', 'B739', 'B77W', 'B772', 'B788', 'B789', 
+                 'B763', 'B744','B733','B732','B77L','B748','CRJ2', 'A332', 
+                 'A359', 'E75S']:
         continue
     for i, sensor in enumerate(sensors):
         if str(sensor) == str(sta):
@@ -57,7 +63,9 @@ for li in file_in.readlines():
     # Convert UTM coordinates to latitude and longitude
     lon, lat = utm_proj(x, y, inverse=True)
 
-    input_files = ['/scratch/irseppi/nodal_data/plane_info/atmosphere_data/' + str(time) + '_' + str(lat) + '_' + str(lon) + '.dat','/scratch/irseppi/nodal_data/plane_info/atmosphere_data_nodes/' + str(time) + '_' + str(sta_lat) + '_' + str(sta_lon) + '.dat']
+    input_files = [f'./nodal_data/plane_info/atmosphere_data/{time}_{lat}_{lon}.dat',
+                   f'./nodal_data/plane_info/atmosphere_data_nodes/' 
+                   + f'{time}_{sta_lat}_{sta_lon}.dat']
 
     if os.path.exists(input_files[0]):
         if os.path.exists(input_files[1]):

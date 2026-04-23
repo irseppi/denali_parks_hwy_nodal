@@ -11,7 +11,7 @@ from matplotlib import colors as mcolors
 utm_proj = Proj(proj='utm', zone='6', ellps='WGS84')
 
 # Read input file containing station crossing data
-file_in = open('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/node_crossings_db_UTM.txt', 'r')
+file_in = open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/node_crossings_db_UTM.txt', 'r')
 latc = []  # List to store latitudes
 lonc = []  # List to store longitudes
 timec = []  # List to store times
@@ -281,5 +281,5 @@ for gg, file in enumerate(file_list):
 
     # Adjust layout and display the plot
     plt.tight_layout(rect=[0.01, 0.05, 0.95, 0.95], h_pad=0, w_pad=0)
-    plt.savefig(f'/home/irseppi/REPOSITORIES/parkshwynodal_supp/output/{file_list[gg].split(".")[0]}.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig(f'./REPOSITORIES/denali_parks_hwy_nodal_supp/output/{file_list[gg].split(".")[0]}.pdf', dpi=300, bbox_inches='tight')
     #plt.show()

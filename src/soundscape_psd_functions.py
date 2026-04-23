@@ -36,9 +36,9 @@ def ensure_project_root_on_sys_path(package_dir="soundscape", fallback_levels_up
 
 def load_stations_for_distance_calculation(fullstations=False):
     if fullstations:
-        STATIONS_txt = "/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/full_nodes.txt"
+        STATIONS_txt = "./REPOSITORIES/denali_parks_hwy_nodal_supp/input/full_nodes.txt"
     else:
-        STATIONS_txt = "/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/parkshwy_nodes.txt"
+        STATIONS_txt = "./REPOSITORIES/denali_parks_hwy_nodal_supp/input/parkshwy_nodes.txt"
 
     LAT_COL = "Latitude"
     LON_COL = "Longitude"

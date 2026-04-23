@@ -62,7 +62,7 @@ print("B3:", station_utm_distance_km(63.4056, -148.8602, 64.01, -148.76))
 # Load Seismometer Data
 # ==========================================
 seismo_data = pd.read_csv(
-    "/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/parkshwy_nodes.txt",
+    "./REPOSITORIES/denali_parks_hwy_nodal_supp/input/parkshwy_nodes.txt",
     sep="|"
 )
 
@@ -107,7 +107,7 @@ print_station_distance("1245", olat, olon)
 # Distance from Station 1127 to Railroad
 # ==========================================
 rail_data = pd.read_csv(
-    "/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/Alaska_Railroad.txt",
+    "./REPOSITORIES/denali_parks_hwy_nodal_supp/input/Alaska_Railroad.txt",
     sep=","
 )
 
@@ -167,7 +167,7 @@ print(f"Distance: {rail_dists_km[min_idx]:.3f} km, {rail_dists_km[min_idx] * 100
 # Distance between Station 1245 to Road
 # ==========================================
 road_data = pd.read_csv(
-    "/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/parks_highway.txt",
+    "./REPOSITORIES/denali_parks_hwy_nodal_supp/input/parks_highway.txt",
     sep=","
 )
 

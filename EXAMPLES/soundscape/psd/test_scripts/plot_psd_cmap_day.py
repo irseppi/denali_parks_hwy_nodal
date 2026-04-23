@@ -22,7 +22,7 @@ def compute_median_psd(psds):
     return all_freqs, np.median(aligned, axis=0)
 
 
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/parkshwy_nodes.txt', sep="|")
+seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/parkshwy_nodes.txt', sep="|")
 stations = seismo_data["Station"].astype(str).values
 
 # PARSE STATIONS

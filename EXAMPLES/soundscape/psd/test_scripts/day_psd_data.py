@@ -12,7 +12,7 @@ def plot_data(frequencies, powers, color='black'):
     plt.xscale('log')
     plt.xlim(-2,250)
 
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal_supp/input/parkshwy_nodes.txt', sep="|")
+seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/parkshwy_nodes.txt', sep="|")
 stations = seismo_data['Station']
 
 for station in stations:

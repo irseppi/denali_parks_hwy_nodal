@@ -45,7 +45,7 @@ utm_proj = pyproj.Proj(proj='utm', zone='6', ellps='WGS84')
 
 station_is = np.arange(1123,1246)
 # Load the seismometer location data
-seismo_data = pd.read_csv('/home/irseppi/REPOSITORIES/parkshwynodal/input/parkshwy_nodes.txt', sep="|")
+seismo_data = pd.read_csv('./REPOSITORIES/denali_parks_hwy_nodal/input/parkshwy_nodes.txt', sep="|")
 # ensure Station is int and keep only stations 1123-1245 (station_is defined above)
 seismo_data['Station'] = seismo_data['Station'].astype(int)
 seismo_data = seismo_data[seismo_data['Station'].isin(station_is)].set_index('Station').reindex(station_is).reset_index()

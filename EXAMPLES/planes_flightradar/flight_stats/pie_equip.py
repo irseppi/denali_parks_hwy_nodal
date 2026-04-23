@@ -1,14 +1,16 @@
+import pandas as pd
 import numpy as np
+from matplotlib.patches import Wedge
 import matplotlib.pyplot as plt
 
-file_path = '/home/irseppi/REPOSITORIES/'
-infile = open(file_path + 'parkshwynodal/input/node_crossings_db_UTM.txt', 'r')
+infile = open('/home/irseppi/REPOSITORIES/parkshwynodal/input/node_crossings_db_UTM.txt', 'r')
+#outfile = open('output.csv', 'a')  # Open the file in append mode
 
-equip_counts = {}  
-flight_nums = {}   
+equip_counts = {}  # Define the "equip_counts" dictionary before the loop
+flight_nums = {}  # Define the "equip_counts" dictionary before the loop
 
 for line in infile:
-	data = line.split(',')  
+	data = line.split(',')  # Split the line by commas
 	equip = data[-2]  # Get the equipment type from the line
 	if equip == np.nan or equip == 'nan':
 		equip = 'Unknown'
@@ -17,11 +19,9 @@ for line in infile:
 		flight_nums[flight_num] = []
 		equip_counts[equip] = equip_counts.get(equip, 0) + 1  # move outside loop to get count of crossings instead of counts of flights
 
-#Print summary statistics
-print('In the crossings database:')
-print('Number of equipment types:', len(equip_counts))
-print('Number of flights:', len(flight_nums))
-
+print(equip_counts)
+print(len(equip_counts))
+print(len(flight_nums))
 # Plotting the first pie chart
 labels = equip_counts.keys()
 sizes = equip_counts.values()
@@ -39,10 +39,10 @@ equip_counts['Other'] = less_than_50_sum
 # Remove the keys with values less than 15 from the original dictionary
 equip_counts = {label: size for label, size in equip_counts.items() if size >= 10}
 equip_counts = {k: v for k, v in sorted(equip_counts.items(), key=lambda item: item[1], reverse=True)}
-
-#Read in color text file to get different flights to be diffrent colors on map
+# Define a color dictionary
 colors=[]
-with open(file_path + 'parkshwynodal/input/fig_style/colors.txt','r') as c_in:
+#Read in color text file to get different flights to be diffrent colors on map
+with open('/home/irseppi/REPOSITORIES/parkshwynodal/input/colors.txt','r') as c_in:
 	for i, line in enumerate(c_in):
 		if (i + 1) % 9 == 0:
 			c = str(line[0:7])
@@ -50,7 +50,6 @@ with open(file_path + 'parkshwynodal/input/fig_style/colors.txt','r') as c_in:
 
 # Plot the two pie charts side by side
 fig, axes = plt.subplots(2, 1, figsize=(8, 14))
-
 # Plot the first pie chart with the 'Other' category as the last slice
 sorted_labels = list(equip_counts.keys())
 sorted_labels.remove('Other')
@@ -62,13 +61,13 @@ sorted_sizes = [equip_counts[label] for label in sorted_labels]
 modified_colors = colors[4:(len(equip_counts)+4)]
 modified_colors[-1] = 'magenta'  # Set the color for 'Other' slice to magenta
 
-# Label wedges of pie chart with equipment type and flight number counts
+# After plotting, manually add labels at the center of each wedge
 wedges, _ = axes[0].pie(
 	sorted_sizes,
 	colors=modified_colors,
 	textprops={'fontsize': 10},
 )
-# Manually move overlapping labels
+
 for i, wedge in enumerate(wedges):
 	if sorted_labels[i] == 'B77W':
 		angle = (wedge.theta2 + wedge.theta1) / 2
@@ -125,13 +124,13 @@ for i, wedge in enumerate(wedges):
 			ha='center', va='center_baseline', fontsize=10,
 		)
 axes[0].axis('equal')
-# Label wedges of pie chart with equipment type and flight number counts
+# After plotting, manually add labels at the center of each wedge
 wedges, _ = axes[1].pie(
 	less_than_50.values(),
 	colors=colors[(len(equip_counts)+10):((len(equip_counts)+10+len(less_than_50)))][::-1],
 	textprops={'fontsize': 10},
 )
-# Manually move overlapping labels
+
 for i, wedge in enumerate(wedges):
 	label = list(less_than_50.keys())[i]
 	size = list(less_than_50.values())[i]
@@ -164,5 +163,5 @@ for i, wedge in enumerate(wedges):
 		)
 axes[1].axis('equal')
 plt.subplots_adjust(hspace=0.05)
-plt.savefig(file_path + 'parkshwynodal/pie_charts_equipment.png', dpi=2500, bbox_inches='tight')
+plt.savefig('/home/irseppi/REPOSITORIES/parkshwynodal/pie_charts_equipment.png', dpi=2500, bbox_inches='tight')
 

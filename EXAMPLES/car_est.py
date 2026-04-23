@@ -6,18 +6,15 @@ from pathlib import Path
 from obspy.core import UTCDateTime
 from scipy.signal import spectrogram
 from matplotlib.ticker import MaxNLocator
+
 # --- Fix sys.path ---
 repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
-from src.doppler_funcs import invert_f, calc_ft, full_inversion
+
 from src.main_inv_fig_functions import remove_median, get_auto_picks_full
+from src.doppler_funcs import invert_f, calc_ft, full_inversion, load_waveform
 
-
-
-
-
-from src.doppler_funcs import load_waveform
 # Interactive picking of points on spectrogram for overtone curve
 def pick_points_on_spectrogram(times, frequencies, spec, vmin, vmax, prompt, axvline=None):
     coords = []

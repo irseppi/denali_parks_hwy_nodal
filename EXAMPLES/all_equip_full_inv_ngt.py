@@ -19,12 +19,15 @@ if str(repo_root) not in sys.path:
 from src.doppler_funcs import make_base_dir, invert_f, full_inversion, get_sta_elevation, load_waveform
 from src.main_inv_fig_functions import time_picks, remove_median, plot_spectrogram, plot_spectrum, get_auto_picks_full
 
-jet = ['B737', 'B738', 'B739', 'B733', 'B763', 'B772', 'B77W', 'B788', 'B789', 'B744', 'B748', 'B77L', 'CRJ2', 'B732', 'A332', 'A359', 'E75S']
+jet = ['B737', 'B738', 'B739', 'B733', 'B763', 'B772', 'B77W', 
+       'B788', 'B789', 'B744', 'B748', 'B77L', 'CRJ2', 'B732', 
+       'A332', 'A359', 'E75S'
+       ]
 rerun_fig = True #Flag rerun the figures without saving the inversion results = True
 mk_picks = True
 
 repo_path = './REPOSITORIES/denali_parks_hwy_nodal/'
-fig_path = '/scratch/irseppi/nodal_data/plane_info/inversion_results_ngt/'
+fig_path = 'inversion_results_ngt/'
 
 # Loop through each station in text file that we already know comes within 2km of the nodes
 file_in = open(repo_path + 'input/node_crossings_db_UTM.txt','r')
@@ -38,19 +41,13 @@ for line in file_in:
     closest_time = float(text[5])
     sta = text[9]
     equip = text[10]
-    alt = float(text[6]) 
-    speed_gt = float(text[7]) 
-    dist_m = float(text[4])   # Distance in meters
-    elev = get_sta_elevation(sta)
-    height_m = alt - elev
-    distance_gt = np.sqrt(dist_m**2 + (height_m)**2) 
 
     folder_spec = equip + '_spec_c'
     folder_spectrum = equip + '_spectrum_c'
     DIR = fig_path + folder_spec + '/2019-0'+str(month)+'-'+str(day)+'/'+str(flight_num)+'/'+str(sta)+'/'
     if os.path.exists(DIR):
         continue
-    file_name = repo_path + 'input/data_picks/' + equip + '_data_picks/inversepicks/2019-0' + str(month) + '-' + str(day) + '/' + str(flight_num) + '/' + str(sta) + '/' + str(closest_time) + '_' + str(flight_num) + '.csv'
+    file_name = f'{repo_path}input/data_picks/{equip}_data_picks/inversepicks/2019-0{month}-{day}/{flight_num}/{sta}/{closest_time}_{flight_num}.csv'
     if not os.path.exists(file_name):
         continue
     else:

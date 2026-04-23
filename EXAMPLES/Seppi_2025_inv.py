@@ -1,7 +1,16 @@
-import numpy as np
 import os
+import sys
 import concurrent.futures
+import numpy as np
+
+from pathlib import Path
 from scipy.signal import spectrogram
+
+# --- Fix sys.path ---
+repo_root = Path(__file__).resolve().parents[1]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
 from src.doppler_funcs import make_base_dir, load_waveform
 from src.main_inv_fig_functions import remove_median, plot_spectrogram, plot_spectrum
 
@@ -10,6 +19,7 @@ num_workers = os.cpu_count()
 def parse_line(line):
     text = line.split(',')
     date = text[0]
+    print(date)
     month = int(date[4:6])
     day = date[6:8]
     flight_num = text[1]
@@ -58,7 +68,7 @@ def plot_results(equip, month, day, flight_num, sta, closest_time, start_time, v
 
     folder_spec = equip + '_spec_c'
     folder_spectrum = equip + '_spectrum_c'
-    DIR = '/scratch/irseppi/nodal_data/plane_info/inversion_results_ngt_parallel/' + folder_spectrum + '/20190'+str(month)+'-'+str(day)+'/'+str(flight_num)+'/'+str(sta)+ '/'+str(sta)+'_' + str(closest_time) + '.png'
+    DIR = f'{repo_root}/inversion_results_ngt/{folder_spectrum}/20190{month}-{day}/{flight_num}/{sta}/{sta}_{closest_time}.png'
     if os.path.exists(DIR):
         return
 
@@ -68,27 +78,29 @@ def plot_results(equip, month, day, flight_num, sta, closest_time, start_time, v
     spec, MDF = remove_median(Sxx)
     middle_index =  len(times) // 2
 
-    BASE_DIR = '/scratch/irseppi/nodal_data/plane_info/inversion_results_ngt_parallel/' + folder_spec + '/2019-0'+str(month)+'-'+str(day)+'/'+str(flight_num)+'/'+str(sta)+'/'
+    BASE_DIR = f'{repo_root}/inversion_results_ngt/{folder_spec}/2019-0{month}-{day}/{flight_num}/{sta}/'
     make_base_dir(BASE_DIR)
     _ = plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l, c, f0_array, F_m, MDF, covm0, flight_num, middle_index, closest_time, BASE_DIR, plot_show=False, gt = False)
 
-    BASE_DIR = '/scratch/irseppi/nodal_data/plane_info/inversion_results_ngt_parallel/' + folder_spectrum + '/20190'+str(month)+str(day)+'/'+str(flight_num)+'/'+str(sta)+'/'
+    BASE_DIR = f'{repo_root}/inversion_results_ngt/{folder_spectrum}/20190{month}{day}/{flight_num}/{sta}/'
     make_base_dir(BASE_DIR)
     plot_spectrum(spec, times, frequencies, t0, l, c, f0_array, fs, closest_time, sta, BASE_DIR)
 
 def inversion_process(line, tracer):
     print((tracer/len(lines))*100, '%')
     month, day, flight_num, closest_time, sta, equip = parse_line(line)
-    input_file ='output/inv_results_ngt/' + equip + '_full_inv_results.txt'
+    input_file =f'{repo_root}/output/inv_results_ngt/' + equip + '_full_inv_results.txt'
     params = find_inv_params(input_file, flight_num, sta)
     if params is None:
         return
     v0, l, t0, start_time, c, f0_array, covm0, F_m = params
     plot_results(equip, month, day, flight_num, sta, closest_time, start_time, v0, l, t0, c, f0_array, covm0, F_m)
 
-# Loop through each station in text file that we already know comes within 2km of the nodes
-with open('./REPOSITORIES/denali_parks_hwy_nodal_supp/input/node_crossings_db_UTM.txt', 'r') as file_in:
-    lines = file_in.readlines()
+if __name__ == '__main__':
+    # Loop through each station in text file that we already know comes within 2km of the nodes
+    with open(f'{repo_root}/input/node_crossings_db_UTM.txt', 'r') as f:
+        lines = f.readlines()
+
     tracer = [i for i in range(len(lines))]
     with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
-        executor.map(inversion_process, lines, tracer)
+        executor.map(inversion_process, lines, tracer*len(lines))

@@ -1,14 +1,13 @@
-import os
-import obspy
 import json
-import numpy as np
-import numpy.linalg as la
-import pandas as pd
 import math
+import numpy as np
+import pandas as pd
+import numpy.linalg as la
+
+from pyproj import Proj
+from pathlib import Path
 from obspy.core import UTCDateTime
 from obspy.clients.fdsn import Client
-from pathlib import Path
-from pyproj import Proj
 from datetime import datetime, timezone
 
 utm_proj = Proj(proj='utm', zone='6', ellps='WGS84')

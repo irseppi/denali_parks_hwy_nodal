@@ -5289,3 +5289,5 @@ src/__pycache__/doppler_funcs.cpython-39.pyc
 output/inversion_results_ngt/nan_spec_c/20190211/527972677/1300/1549928109.239194_527972677.png
 src/__pycache__/doppler_funcs.cpython-39.pyc
 src/__pycache__/main_inv_fig_functions.cpython-39.pyc
+src/__pycache__/doppler_funcs_class.cpython-39.pyc
+src/__pycache__/gls_inversion.cpython-39.pyc

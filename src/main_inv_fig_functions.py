@@ -8,7 +8,6 @@ from matplotlib.ticker import MaxNLocator
 from src.doppler_funcs import make_base_dir, calc_ft, calc_f0, invert_f
 
 
-
 ##############################################################################################################################################################################################################
 
 def remove_median(Sxx):
@@ -203,90 +202,6 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
     gc.collect()
 
     return qnum
-
-################################################################################################################################################################################################################################################################################################################################
-
-def plot_spectrum(spec, times, frequencies, t0, l, c, f0_array, fs, closest_time, sta, dir_name):
-    """
-    Plot and save the spectrum with markers for the overtones arriving at the station at t0.
-
-    Args:
-        spec (numpy.ndarray): The spectrum data.
-        times (array): The time array for the spectrogram.
-        frequencies (numpy.ndarray): The frequencies.
-        t0 (float): The time of aircraft closest approach relative to start of spectrogram.
-        l (float): The distance between closest approach of the aircraft and the station (d0).
-        c (float): The speed of sound.
-        f0_array (list): The list of frequencies.
-        fs (int): The sampling frequency.
-        closest_time (float): The time of closest approach of aircraft from flightradar, for saving the file.
-        sta (int or str): The station identifier.
-        dir_name (str): The directory name.
-
-    Returns:
-        None
-    """
-    t0prime = t0 + l/c
-
-    closest_index = np.argmin(np.abs(t0prime - times))
-    arrive_time = spec[:,closest_index]
-    for i in range(len(arrive_time)):
-        if arrive_time[i] < 0:
-            arrive_time[i] = 0
-
-    vmax = np.max(arrive_time)
-    fig = plt.figure(figsize=(10,6))
-    plt.grid()
-
-    plt.plot(frequencies, spec[:,closest_index], c='#377eb8')
-    freqp_hold = 0
-    ampp_hold = 0
-    for pp in range(len(f0_array)):
-        f0 = f0_array[pp]
-        if fs/2 < f0:
-            continue
-
-        if np.isnan(f0):
-            continue
-        if f0 > 250:
-            continue
-        
-        upper = int(f0 + 3)
-        lower = int(f0 - 3)
-        if upper > 250:
-            upper = 250
-
-        
-        tt = spec[lower:upper, closest_index]
-
-        ampp = np.max(tt)
-        freqp = np.argmax(tt)+lower
-        plt.scatter(freqp, ampp, color='black', marker='x', s=100, zorder=10)
-        #Shift text a bit for better visibility
-        #Depends on sampling rate
-        if freqp > 235:
-            if abs(freqp - freqp_hold) < 10 and ampp - ampp_hold < 2:
-                plt.text(freqp - 5, ampp + vmax*0.08, freqp, fontsize=17, ha='center', fontweight='bold')
-            else:
-                plt.text(freqp - 5, ampp + vmax*0.03, freqp, fontsize=17, ha='center', fontweight='bold')
-        else:
-            if abs(freqp - freqp_hold) < 10 and ampp - ampp_hold < 2:
-                plt.text(freqp, ampp + vmax*0.08, freqp, fontsize=17, ha='center', fontweight='bold')
-            else:
-                plt.text(freqp, ampp + vmax*0.03, freqp, fontsize=17, ha='center', fontweight='bold')
-        freqp_hold = freqp
-        ampp_hold = ampp
-    plt.xlim(0, int(fs/2))
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.ylim(0, vmax*1.1)
-    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
-    plt.xlabel('Frequency (Hz)', fontsize=17)
-    plt.ylabel("Relative Amplitude at t' = {:.2f} s (dB)".format(t0prime), fontsize=17)
-
-    fig.savefig(dir_name + '/'+str(sta)+'_' + str(closest_time) + '.png', dpi=500)
-    plt.close(fig)
-    gc.collect()
     
 ##############################################################################################################################################################################################################
 

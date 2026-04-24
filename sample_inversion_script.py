@@ -1,3 +1,21 @@
+'''User can put any time series data from IRIS that contains a moving source  
+and follow the prompts to perform a Doppler inversion. The script will guide the 
+user through picking points on the spectrogram, associating those picks with 
+overtone curves, and selecting a time window for the inversion. The final output 
+will be a plot of the spectrogram with the inversion results overlaid, along 
+with a title that includes the estimated model parameters and their 
+uncertainties. The inversion results will be printed in the terminal for each 
+iteration.'''
+
+#User inputs:
+client_url = "http://service.iris.edu/ph5ws/dataselect/1"
+network = "ZE"
+station = "1011"
+location = "*"
+channel = "DPZ"
+starttime = "2019-02-21T20:33:34"
+endtime = "2019-02-21T20:37:34"
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -5,6 +23,7 @@ from scipy.signal import spectrogram
 from obspy.clients.fdsn import Client
 from obspy.core import UTCDateTime
 from matplotlib.ticker import MaxNLocator
+
 from src.doppler_funcs import invert_f, calc_ft, full_inversion
 from src.main_inv_fig_functions import (
     remove_median, get_auto_picks_full, pick_points_on_spectrogram, 
@@ -14,12 +33,13 @@ from src.main_inv_fig_functions import (
 client = Client(
     "http://service.iris.edu",
     service_mappings={
-        "dataselect": "http://service.iris.edu/ph5ws/dataselect/1"
+        "dataselect": client_url
     }
 )
-starttime = UTCDateTime("2019-02-21T20:33:34")
-endtime = UTCDateTime("2019-02-21T20:37:34")
-st = client.get_waveforms("ZE", "1011", "*", "DPZ", starttime, endtime)
+starttime = UTCDateTime(starttime)
+endtime = UTCDateTime(endtime)
+st = client.get_waveforms(
+    network, station, location, channel, starttime, endtime)
 tr = st[0]
 data = tr.data
 t_wf = tr.times()

@@ -1,4 +1,5 @@
 import gc
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,7 +9,7 @@ from matplotlib.ticker import MaxNLocator
 from src.doppler_funcs import make_base_dir, calc_ft, calc_f0, invert_f
 
 
-##############################################################################################################################################################################################################
+################################################################################
 
 def remove_median(Sxx):
     """
@@ -36,11 +37,16 @@ def remove_median(Sxx):
     spec = 10 * np.log10(Sxx_safe) - (10 * np.log10(MDF_safe))
     return spec, MDF
 
-############################################################################################################################################################################################################################
+################################################################################
 
-def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l, c, f0_array, F_m, MDF, Cpost0, flight, middle_index, closest_time, dir_name, plot_show=True, gt = True):
+def plot_spectrogram(
+        data, fs, t_wf, title, spec, times, frequencies, t0, v0, l, c, f0_array, 
+        F_m, MDF, Cpost0, flight, middle_index, closest_time, dir_name, 
+        plot_show=True, gt = True):
     """
-    Plot and save the waveform, unfiltered, and the spectrogram of the given data. Include the estimated curve using the final model parameters outputs from the inversions.
+    Plot and save the waveform, unfiltered, and the spectrogram of the given 
+    data. Include the estimated curve using the final model parameters outputs 
+    from the inversions.
 
     Args:
         data (np.ndarray): The waveform data.
@@ -50,7 +56,8 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
         spec (np.ndarray): The spectrogram data (2D array).
         times (np.ndarray): The time array for the spectrogram.
         frequencies (np.ndarray): The frequency array for the spectrogram.
-        t0 (float): The estimated time of aircraft closest approach to the station.
+        t0 (float): The estimated time of aircraft closest approach to the 
+            station.
         v0 (float): The velocity.
         l (float): The distance.
         c (float): The speed of sound.
@@ -60,10 +67,13 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
         Cpost0 (np.ndarray): The normalized posterior covariance matrix.
         flight (int): The flight number.
         middle_index (int): The index of the middle column.
-        closest_time (float): The time of closest approach of aircraft from flightradar, for saving the file.
+        closest_time (float): The time of closest approach of aircraft from 
+            flightradar, for saving the file.
         dir_name (str): The directory name.
-        plot_show (bool): If True, show the plot and ask user to provide a quality number. If False, save the plot without showing it. 
-        gt (bool): If True, the ground truth is used for the initial model in the inversion.
+        plot_show (bool): If True, show the plot and ask user to provide a 
+            quality number. If False, save the plot without showing it. 
+        gt (bool): If True, the ground truth is used for the initial model in 
+            the inversion.
 
     Returns:
         str: The user assigned quality number.
@@ -92,10 +102,18 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
     ax1.set_ylabel('Counts')
 
     # Plot spectrogram
-    cax = ax2.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)		
+    cax = ax2.pcolormesh(
+        times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, 
+        vmax=vmax)		
     ax2.set_xlabel('Time (s)')
-    ax2.axvline(x=t0prime, c = '#377eb8', ls = '--',linewidth=0.5,label= "t\u2080' = " + "%.2f" % t0prime +' s')
-    ax2.axvline(x=t0, c = '#e41a1c', ls = '--', linewidth=0.7,label= "t\u2080 = " + "%.2f" % t0 +' s')
+
+    ax2.axvline(
+        x=t0prime, c = '#377eb8', ls = '--', linewidth=0.5, 
+        label= "t\u2080' = " + "%.2f" % t0prime +' s')
+    ax2.axvline(
+        x=t0, c = '#e41a1c', ls = '--', linewidth=0.7,
+        label= "t\u2080 = " + "%.2f" % t0 +' s')
+    
     for pp in range(len(f0_array)):
         f0 = f0_array[pp]
         ft = calc_ft(times, t0, f0, v0, l, c)
@@ -110,8 +128,9 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
         med_df = "NaN"
         mad_df = "NaN"
     else:
-        #Generate random samples of f0 values withing their sigma from the covariance matrix 
-        #Calculate the median of the differences and MAD to obtain error
+        #Generate random samples of f0 values withing their sigma from the  
+        #covariance matrix. Calculate the median of the differences and MAD 
+        # to obtain error
         f_range = []
         NTRY = 1000
         for N in range(NTRY):
@@ -147,13 +166,45 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
 
     if isinstance(F_m, str):
          if med_df == "NaN":
-             ax2.set_title("t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0]+' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] + ' m/s, d\u2080 = '+ "%.2f" % l +' \u00B1 ' + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + f0lab_str + ' \u00B1 ' + "%.2f" % np.median(Cpost0[3:]) +' Hz' + '\n[' + F_m + ']' + ' ' + type_inv, fontsize=fss)
+             ax2.set_title(
+                 "t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
+                 + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0]
+                 + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
+                 + ' m/s, d\u2080 = '+ "%.2f" % l + ' \u00B1 ' 
+                 + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + f0lab_str 
+                 + ' \u00B1 ' + "%.2f" % np.median(Cpost0[3:]) + ' Hz'
+                + '\n[' + F_m + ']' + ' ' + type_inv, fontsize=fss)
          else:
-            ax2.set_title("t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0] +' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] + ' m/s, d\u2080 = '+ "%.2f" % l +' \u00B1 ' + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + f0lab_str + ' \u00B1 ' + "%.2f" % np.median(Cpost0[3:]) +' Hz, df\u209B = ' + "%.2f" % med_df + ' \u00B1 ' + "%.2f" % mad_df + ' Hz\n[' + F_m + ']' + ' ' + type_inv , fontsize=fss)
+            ax2.set_title(
+                "t\u2080 = " + "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
+                + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0] 
+                + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
+                + ' m/s, d\u2080 = '+ "%.2f" % l +' \u00B1 ' 
+                + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' 
+                + f0lab_str + ' \u00B1 ' + "%.2f" % np.median(Cpost0[3:]) 
+                + ' Hz, df\u209B = ' + "%.2f" % med_df + ' \u00B1 ' 
+                + "%.2f" % mad_df + ' Hz\n[' + F_m + ']' + ' ' 
+                + type_inv , fontsize=fss)
+            
     elif med_df == "NaN":
-        ax2.set_title("t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0]+' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] + ' m/s, d\u2080 = '+ "%.2f" % l +' \u00B1 ' + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + f0lab_str + ' \u00B1 ' + "%.2f" % np.median(Cpost0[3:]) + ' Hz\nMisfit: ' + "%.4f" % F_m + ' ' + type_inv, fontsize=fss)
+        ax2.set_title(
+            "t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
+            + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0] 
+            + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
+            + ' m/s, d\u2080 = '+ "%.2f" % l + ' \u00B1 ' 
+            + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + f0lab_str 
+            + ' \u00B1 ' + "%.2f" % np.median(Cpost0[3:]) + ' Hz\nMisfit: ' 
+            + "%.4f" % F_m + ' ' + type_inv, fontsize=fss)
     else:
-        ax2.set_title("t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0] +' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] + ' m/s, d\u2080 = '+ "%.2f" % l +' \u00B1 ' + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + f0lab_str + ' \u00B1 ' + "%.2f" % np.median(Cpost0[3:]) +' Hz, df\u209B = ' + "%.2f" % med_df + ' \u00B1 ' + "%.2f" % mad_df + ' Hz\nMisfit: ' + "%.4f" % F_m + ' ' + type_inv, fontsize=fss)
+        ax2.set_title(
+            "t\u2080 = " + "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
+            + ' s, v = ' + "%.2f" % v0 +' \u00B1 ' + "%.2f" % Cpost0[0] 
+            + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
+            + ' m/s, d\u2080 = '+ "%.2f" % l +' \u00B1 ' + "%.2f" % Cpost0[1] 
+            + ' m, \n' + 'f\u209B = ' + f0lab_str + ' \u00B1 ' 
+            + "%.2f" % np.median(Cpost0[3:]) +' Hz, df\u209B = ' 
+            + "%.2f" % med_df + ' \u00B1 ' + "%.2f" % mad_df + ' Hz\nMisfit: ' 
+            + "%.4f" % F_m + ' ' + type_inv, fontsize=fss)
 
     ax2.legend(loc='upper right',fontsize = 'small')
     ax2.set_ylabel('Frequency (Hz)')
@@ -188,12 +239,17 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
     ax4.plot(middle_column2, frequencies, c='#ff7f00')  
     ax4.set_ylim(0, int(fs/2))
     ax4.set_xlim(vmax2*1.1, vmin2) 
-    ax4.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+    ax4.tick_params(
+        left=False, right=False, labelleft=False, labelbottom=False, 
+        bottom=False)
+    
     ax4.grid(axis='y')
 
     if plot_show:
         plt.show()     
-        qnum = input('What quality number would you give this?(first num for data quality(0-3), second for ability to fit model to data(0-1))')
+        qnum = input(
+            'What quality number would you give this?(first num for data ' \
+            'quality(0-3), second for ability to fit model to data(0-1))')
     else:
         qnum = '__'
    
@@ -205,30 +261,41 @@ def plot_spectrogram(data, fs, t_wf, title, spec, times, frequencies, t0, v0, l,
     
 ##############################################################################################################################################################################################################
 
-def doppler_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta, equip, closest_time, tarrive, make_picks=True, spec_window = 120):
+def doppler_picks(
+        spec, times, frequencies, vmin, vmax, month, day, flight, sta, equip, 
+        closest_time, tarrive, make_picks=True, spec_window = 120):
     """
-    Pick the points for the doppler shift.
+    Pick the points for the doppler shift. Specific to Seppi 2025 data structure
+    and flightradar25 information needed.
 
     Args:
         spec (numpy.ndarray): The spectrogram data.
         times (numpy.ndarray): The time array.
         frequencies (numpy.ndarray): The frequency array.
-        vmin (float): The minimum amplitude value for the center line of the spectrogram. Used for adjusting colorbar.
-        vmax (float): The maximum amplitude value for the center line of the spectrogram. Used for adjusting colorbar.
+        vmin (float): The minimum amplitude value for the center line of the 
+            spectrogram. Used for adjusting colorbar.
+        vmax (float): The maximum amplitude value for the center line of the 
+            spectrogram. Used for adjusting colorbar.
         month (int): The month of the data.
         day (int): The day of the data.
         flight (int): The flight number.
         sta (int or str): The station identifier.
         equip (str): The equipment identifier.
         closest_time (float): The time of closest approach.
-        start_time (float): The start time of the spectrogram, to save for future reference on plotting the spectrogram.
-        make_picks (bool): If you come to this function and no picks exist, it will allow you to make new picks.
+        start_time (float): The start time of the spectrogram, to save for 
+            future reference on plotting the spectrogram.
+        make_picks (bool): If you come to this function and no picks exist, it 
+            will allow you to make new picks.
 
     Returns:
         list: The list of picks the user picked along the most prominent overtone.
     """
-
-    file_name = './REPOSITORIES/denali_parks_hwy_nodal/input/data_picks/' + equip + '_data_picks/inversepicks/2019-0' + str(month) + '-' + str(day) + '/' + str(flight) + '/' + str(sta) + '/' + str(closest_time) + '_' + str(flight) + '.csv'
+    # --- Fix sys.path ---
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    file_name = f'{repo_root}/input/data_picks/{equip}_data_picks/inversepicks'
+    file_name += f'/2019-0{month}-{day}/{flight}/{sta}/{closest_time}_{flight}.csv'
 
     if Path(file_name).exists():
         coords = []
@@ -240,28 +307,39 @@ def doppler_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta,
                 start_time = float(pick_data[2])
             else:
                 plt.figure()
-                plt.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)
-                plt.scatter([coord[0] for coord in coords], [coord[1] for coord in coords], color='black', marker='x')
+                plt.pcolormesh(
+                    times, frequencies, spec, shading='gouraud', cmap='pink_r', 
+                    vmin=vmin, vmax=vmax)
+                plt.scatter(
+                    [coord[0] for coord in coords], 
+                    [coord[1] for coord in coords], 
+                    color='black', marker='x')
                 plt.show()
-                correct_time = input("No start time found in file. Do your picks line up with this signal?(y/n): ")
+                correct_time = input(
+                    "No start time found in file. Do your picks line up with " \
+                    "this signal?(y/n): ")
                 if correct_time == 'y': 
                     start_time = tarrive - spec_window
-                    # Rewrite file with start_time as third column and move \n to next column
+                    # Rewrite file with start_time as third column 
+                    # and move \n to next column
                     with open(file_name, 'r') as file:
                         lines = file.readlines()
                     with open(file_name, 'w') as file:
                         for line in lines:
                             pick_data = line.strip().split(',')
-                            # Only keep first two columns, append start_time, then move \n to next column
+                            # Only keep first two columns, append start_time 
+                            # then move \n to next column
                             if len(pick_data) >= 2:
-                                file.write(f"{pick_data[0]},{pick_data[1]},{start_time},\n")
+                                file.write(
+                                    f'{pick_data[0]},{pick_data[1]},{start_time},\n')
                 else:
                     return [], None
         file.close()  
         return coords, start_time
     
     elif make_picks:
-        BASE_DIR = './REPOSITORIES/denali_parks_hwy_nodal/input/data_picks/' + equip + '_data_picks/inversepicks/2019-0' + str(month) + '-' + str(day) + '/' + str(flight) + '/' + str(sta) + '/'
+        BASE_DIR = f'{repo_root}/input/data_picks/{equip}_data_picks'
+        BASE_DIR += f'/inversepicks/2019-0{month}-{day}/{flight}/{sta}/'
         make_base_dir(BASE_DIR)
         pick_again = 'y'
         start_time = tarrive - spec_window
@@ -269,14 +347,17 @@ def doppler_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta,
             r1 = open(file_name, 'w')
             coords = []
             plt.figure()
-            plt.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)
+            plt.pcolormesh(
+                times, frequencies, spec, shading='gouraud', cmap='pink_r', 
+                vmin=vmin, vmax=vmax)
             def onclick(event, coords=coords):
                 #global coords
                 coords.append((event.xdata, event.ydata))
                 plt.scatter(event.xdata, event.ydata, color='black', marker='x')  
                 plt.draw() 
                 print('Clicked:', event.xdata, event.ydata)  
-                r1.write(str(event.xdata) + ',' + str(event.ydata) + ',' + str(start_time) + ',\n')
+                r1.write(
+                    f'{event.xdata},{event.ydata},{start_time},\n')
             plt.gcf().canvas.mpl_connect('button_press_event', onclick)
 
             plt.show(block=True)
@@ -288,33 +369,44 @@ def doppler_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta,
 
 ##############################################################################################################################################################################################################
 
-def overtone_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta, equip, closest_time, start_time, t0, tarrive, make_picks=True):
+def overtone_picks(
+        spec, times, frequencies, vmin, vmax, month, day, flight, sta, equip, 
+        closest_time, start_time, t0, tarrive, make_picks=True):
     """
-    Pick the points for the overtone shift.
+    Pick the points for the overtone shift. Specific to Seppi 2025 data 
+    structure and flightradar25 information needed.
 
     Args:
         spec (numpy.ndarray): The spectrogram data.
         times (numpy.ndarray): The time array.
         frequencies (numpy.ndarray): The frequency array.
-        vmin (float): The minimum amplitude value for the center line of the spectrogram. Used for adjusting colorbar.
-        vmax (float): The maximum amplitude value for the center line of the spectrogram. Used for adjusting colorbar.
+        vmin (float): The minimum amplitude value for the center line of the 
+            spectrogram. Used for adjusting colorbar.
+        vmax (float): The maximum amplitude value for the center line of the 
+            spectrogram. Used for adjusting colorbar.
         month (int): The month of the data.
         day (int): The day of the data.
         flight (int): The flight number.
         sta (int or str): The station identifier.
         equip (str): The equipment identifier.
         closest_time (float): The time of closest approach.
-        start_time (float): The start time of the spectrogram, to save for future reference on plotting the spectrogram.
+        start_time (float): The start time of the spectrogram, to save for 
+            future reference on plotting the spectrogram.
         t0 (float): The estimated acoustic wave arrival time.
         tarrive (float): The initial calculated time of acoustic wave arrival.
-        make_picks (bool): If you come to this function and no picks exist, it will allow you to make new picks.
+        make_picks (bool): If you come to this function and no picks exist,     
+            it will allow you to make new picks.
 
     Returns:
         list: List of frequencies picked by user along different overtones.
         list: List of times corresponding to the picked frequencies.
     """
-
-    output2 = './REPOSITORIES/denali_parks_hwy_nodal/input/data_picks/' + equip + '_data_picks/overtonepicks/2019-0' + str(month) + '-' + str(day) + '/' + str(flight) + '/' + str(sta) + '/' + str(closest_time) + '_' + str(flight) + '.csv'
+    # --- Fix sys.path ---
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    output2 = f'{repo_root}/input/data_picks/{equip}_data_picks/overtonepicks'
+    output2 += f'/2019-0{month}-{day}/{flight}/{sta}/{closest_time}_{flight}.csv'
     if Path(output2).exists():
 
         peaks = []
@@ -328,7 +420,8 @@ def overtone_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta
         return peaks, freqpeak
     
     elif make_picks:
-        BASE_DIR = './REPOSITORIES/denali_parks_hwy_nodal/input/data_picks/' + equip + '_data_picks/overtonepicks/2019-0' + str(month) + '-' + str(day) + '/' + str(flight) + '/' + str(sta) + '/'
+        BASE_DIR = f'{repo_root}/input/data_picks/{equip}_data_picks/'
+        BASE_DIR += f'/overtonepicks/2019-0{month}-{day}/{flight}/{sta}/'
         make_base_dir(BASE_DIR)
         pick_again = 'y'
         while pick_again == 'y':
@@ -336,7 +429,9 @@ def overtone_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta
             peaks = []
             freqpeak = []
             plt.figure()
-            plt.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)
+            plt.pcolormesh(
+                times, frequencies, spec, shading='gouraud', cmap='pink_r', 
+                vmin=vmin, vmax=vmax)
             plt.axvline(x=t0, c = '#377eb8', ls = '--')
             plt.axvline(x=tarrive-start_time, c = '#e41a1c', ls = '--')
             def onclick(event):
@@ -346,7 +441,7 @@ def overtone_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta
                 plt.scatter(event.xdata, event.ydata, color='black', marker='x')  # Add this line
                 plt.draw() 
                 print('Clicked:', event.xdata, event.ydata)  
-                r2.write(str(event.xdata) + ',' + str(event.ydata) + ',' + str(start_time) + ',\n')
+                r2.write(f'{event.xdata},{event.ydata},{start_time},\n')
             cid = plt.gcf().canvas.mpl_connect('button_press_event', onclick)
 
             plt.show(block=True)
@@ -359,9 +454,12 @@ def overtone_picks(spec, times, frequencies, vmin, vmax, month, day, flight, sta
 
 ##############################################################################################################################################################################################################
 
-def time_picks(month, day, flight, sta, equip, tobs, fobs, closest_time, start_time, spec, times, frequencies, vmin, vmax, w, peaks_assos, make_picks=True):
+def time_picks(
+        month, day, flight, sta, equip, tobs, fobs, closest_time, start_time, 
+        spec, times, frequencies, vmin, vmax, w, peaks_assos, make_picks=True):
     """
-    Pick the points for the time shift.
+    Pick the points for the time shift. Specific to Seppi 2025 data structure
+    and flightradar25 information needed.
 
     Args:
 
@@ -373,23 +471,34 @@ def time_picks(month, day, flight, sta, equip, tobs, fobs, closest_time, start_t
         tobs (list): The time array.
         fobs (list): The frequency array.
         closest_time (float): The time of closest approach.
-        start_time (float): The start time of the spectrogram, to save for future refrence on plotting the spectrogram.
+        start_time (float): The start time of the spectrogram, to save for 
+            future refrence on plotting the spectrogram.
         spec (numpy.ndarray): The spectrogram data.
         times (numpy.ndarray): The time array.
         frequencies (numpy.ndarray): The frequency array.
-        vmin (float): The minimum amplitude value for the center line of the spectrogram. Used for adjusting colorbar.
-        vmax (float): The maximum amplitude value for the center line of the spectrogram. Used for adjusting colorbar.
+        vmin (float): The minimum amplitude value for the center line of the 
+            spectrogram. Used for adjusting colorbar.
+        vmax (float): The maximum amplitude value for the center line of the 
+            spectrogram. Used for adjusting colorbar.
         w (int): The number of peaks.
-        peaks_assos (list or bool): The number of peaks associated with each overtone.
-        make_picks (bool): If you come to this function and no picks exist, it will allow you to make new picks.
+        peaks_assos (list or bool): The number of peaks associated with 
+            each overtone.
+        make_picks (bool): If you come to this function and no picks exist, 
+            it will allow you to make new picks.
 
     Returns:
         list: The time array, including data for all overtones.
         list: The frequency array, including data for all overtones.
-        list: The number of data points associated with each overtone, for indexing purposes.
+        list: The number of data points associated with each overtone,  
+            for indexing purposes.
     """
+    # --- Fix sys.path ---
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    output3 = f'{repo_root}/input/data_picks/{equip}_data_picks/timepicks/'
+    output3 += f'2019-0{month}-{day}/{flight}/{sta}/{closest_time}_{flight}.csv'
 
-    output3 = './REPOSITORIES/denali_parks_hwy_nodal/input/data_picks/' + equip + '_data_picks/timepicks/2019-0' + str(month) + '-' + str(day) + '/' + str(flight) + '/' + str(sta) + '/' + str(closest_time) + '_' + str(flight) + '.csv'
     if Path(output3).exists():
         set_time = []
         with open(output3, 'r') as file:
@@ -424,7 +533,8 @@ def time_picks(month, day, flight, sta, equip, tobs, fobs, closest_time, start_t
         return tobs, fobs, peaks_assos
 
     elif make_picks:
-        BASE_DIR = './REPOSITORIES/denali_parks_hwy_nodal/input/data_picks/' + equip + '_data_picks/timepicks/2019-0'+str(month)+'-'+str(day)+'/'+str(flight)+'/'+str(sta)+'/'
+        BASE_DIR = f'{repo_root}/input/data_picks/{equip}_data_picks/timepicks'
+        BASE_DIR += f'/2019-0{month}-{day}/{flight}/{sta}/'
         make_base_dir(BASE_DIR)
         
         pick_again = 'y'
@@ -432,15 +542,17 @@ def time_picks(month, day, flight, sta, equip, tobs, fobs, closest_time, start_t
             r3 = open(output3,'w')
             set_time = []
             plt.figure()
-            plt.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)
+            plt.pcolormesh(
+                times, frequencies, spec, shading='gouraud', cmap='pink_r', 
+                vmin=vmin, vmax=vmax)
             plt.scatter(tobs,fobs, color='black', marker='x')
             def onclick(event):
                 #global coords
                 set_time.append(event.xdata) 
-                plt.scatter(event.xdata, event.ydata, color='red', marker='x')  # Add this line
+                plt.scatter(event.xdata, event.ydata, color='red', marker='x')  
                 plt.draw() 
                 print('Clicked:', event.xdata, event.ydata)  
-                r3.write(str(event.xdata) + ',' + str(event.ydata) + ',' + str(start_time) + ',\n')
+                r3.write(f'{event.xdata},{event.ydata},{start_time},\n')
 
             cid = plt.gcf().canvas.mpl_connect('button_press_event', onclick)
             plt.show(block=True)
@@ -476,7 +588,8 @@ def time_picks(month, day, flight, sta, equip, tobs, fobs, closest_time, start_t
 
 ###############################################################################################################################
 
-def get_auto_picks_1o(times, frequencies, spec, ft, corridor_width, mprior, sigma_prior):
+def get_auto_picks_1o(
+        times, frequencies, spec, ft, corridor_width, mprior, sigma_prior):
     """
     Get automatic picks for the first overtone.
 
@@ -484,7 +597,8 @@ def get_auto_picks_1o(times, frequencies, spec, ft, corridor_width, mprior, sigm
         times (np.ndarray): Array of time values.
         frequencies (np.ndarray): Array of frequency values.
         spec (np.ndarray): Spectrogram data.
-        ft (np.ndarray): Frequency calculated from model parameters using `calc_ft`.
+        ft (np.ndarray): Frequency calculated from model parameters 
+            using `calc_ft`.
         corridor_width (float): Width of the corridor for picking.
 
     Returns:
@@ -536,7 +650,9 @@ def get_auto_picks_1o(times, frequencies, spec, ft, corridor_width, mprior, sigm
 
 ################################################################################################################################
 
-def get_auto_picks_full(peaks, time_peaks, times, frequencies, spec, corridor_width, t0, v0, l, c, sigma_prior, vmax):
+def get_auto_picks_full(
+        peaks, time_peaks, times, frequencies, spec, corridor_width, t0, v0, l, 
+        c, sigma_prior, vmax):
     """
     Get automatic picks for all overtones.
 
@@ -557,7 +673,8 @@ def get_auto_picks_full(peaks, time_peaks, times, frequencies, spec, corridor_wi
     Returns:
         list: List of observed times.
         list: List of observed frequencies.
-        list: List of counts of peaks associated with each overtone, for indexing.
+        list: List of counts of peaks associated with each overtone, 
+            for indexing.
         list: List of fundamental frequencies calculated for each peak.
     """
 
@@ -596,7 +713,9 @@ def get_auto_picks_full(peaks, time_peaks, times, frequencies, spec, corridor_wi
 
             tt = spec[lower_index:upper_index, t_f]
 
-            max_amplitude_index,_ = find_peaks(tt, prominence = 15, wlen=10, height=vmax*0.1)
+            max_amplitude_index,_ = find_peaks(
+                tt, prominence = 15, wlen=10, height=vmax*0.1)
+            
             if len(max_amplitude_index) == 0:
                 continue
 
@@ -615,7 +734,8 @@ def get_auto_picks_full(peaks, time_peaks, times, frequencies, spec, corridor_wi
         if len(ttt) > 0 and f0 <= 230:
             coord_inv_array = np.array(coord_inv)
             mtest = [f0,v0, l, t0,c]
-            mtest,_,_,_ = invert_f(mtest,sigma_prior, coord_inv_array, num_iterations=2)
+            mtest,_,_,_ = invert_f(
+                mtest,sigma_prior, coord_inv_array, num_iterations=2)
             ft = calc_ft(ttt,  mtest[3], mtest[0], mtest[1], mtest[2], mtest[4])
             delf = np.array(ft) - np.array(maxfreq)
 
@@ -635,3 +755,68 @@ def get_auto_picks_full(peaks, time_peaks, times, frequencies, spec, corridor_wi
             peaks_assos.append(0)
 
     return tobs, fobs, peaks_assos, f0_array
+
+
+# Interactive picking of points on spectrogram for overtone curve
+def pick_points_on_spectrogram(
+        times, frequencies, spec, vmin, vmax, prompt, axvline=None
+):
+    coords = []
+    plt.figure()
+    plt.pcolormesh(
+        times, frequencies, spec, shading='gouraud', cmap='pink_r',
+        vmin=vmin, vmax=vmax
+    )
+    if axvline is not None:
+        plt.axvline(x=axvline, c='#377eb8', ls='--')
+    def onclick(event):
+        if event.xdata is not None and event.ydata is not None:
+            coords.append((event.xdata, event.ydata))
+            plt.scatter(event.xdata, event.ydata, color='black', marker='x')
+            plt.draw()
+            print('Clicked:', event.xdata, event.ydata)
+    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
+    plt.show(block=True)
+    return coords
+
+# Interactive picking of single points (overtone peaks)
+def pick_single_points(
+        times, frequencies, spec, vmin, vmax, prompt, axvline=None
+):
+    peaks, freqpeak = [], []
+    plt.figure()
+    plt.pcolormesh(
+        times, frequencies, spec, shading='gouraud', cmap='pink_r',
+        vmin=vmin, vmax=vmax
+    )
+    if axvline is not None:
+        plt.axvline(x=axvline, c='#377eb8', ls='--')
+    def onclick(event):
+        if event.xdata is not None and event.ydata is not None:
+            peaks.append(event.ydata)
+            freqpeak.append(event.xdata)
+            plt.scatter(event.xdata, event.ydata, color='black', marker='x')
+            plt.draw()
+            print('Clicked:', event.xdata, event.ydata)
+    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
+    plt.show(block=True)
+    return peaks, freqpeak
+
+# Interactive picking of time window for inversion
+def pick_time_window(times, frequencies, spec, vmin, vmax, tobs, fobs):
+    set_time = []
+    plt.figure()
+    plt.pcolormesh(
+        times, frequencies, spec, shading='gouraud', cmap='pink_r',
+        vmin=vmin, vmax=vmax
+    )
+    plt.scatter(tobs, fobs, color='black', marker='x')
+    def onclick(event):
+        if event.xdata is not None:
+            set_time.append(event.xdata)
+            plt.scatter(event.xdata, event.ydata, color='red', marker='x')
+            plt.draw()
+            print('Clicked:', event.xdata, event.ydata)
+    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
+    plt.show(block=True)
+    return set_time

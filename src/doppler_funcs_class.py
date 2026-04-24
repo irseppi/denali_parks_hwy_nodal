@@ -1,9 +1,7 @@
 '''Inversion functions for Doppler shift data.'''
 import numpy as np
 import numpy.linalg as la
-'''Please comment on how well the code adheres to PEP8 standards. Also, please
- comment on places where the code could be made more efficient and have less 
- lines'''
+
 class DopplerInversion:
 
 	def __init__(self, fobs, tobs, mprior, prior_sigma, num_iterations=4,

@@ -5,10 +5,11 @@ from scipy.signal import spectrogram
 from obspy.clients.fdsn import Client
 from obspy.core import UTCDateTime
 from matplotlib.ticker import MaxNLocator
-from src.doppler_funcs import invert_f, calc_ft, full_inversion
+from src.doppler_funcs_class import DopplerInversion as DI
 from src.main_inv_fig_functions import (
     remove_median, get_auto_picks_full, pick_points_on_spectrogram, 
     pick_single_points, pick_time_window)
+
 
 # Download waveform data from IRIS PH5WS
 client = Client(
@@ -79,12 +80,14 @@ m0 = [f0, v0, l, t0, c]
 sigma_prior = [40, 1, 1, 200, 1]  # Initial prior uncertainties
 
 # First inversion to refine model
-m, _, _, F_m = invert_f(m0, sigma_prior, coords_array, num_iterations=3)
+m, _, _, F_m = DI.invert_f(
+    m0, sigma_prior, coords_array, num_iterations=3)
 m0[0], m0[3] = m[0], m[3]
 
 # Second inversion with wider priors
 sigma_prior = [150, 100, 10000, 200, 100]
-m, _, _, F_m = invert_f(m0, sigma_prior, coords_array, num_iterations=3)
+m, _, _, F_m = DI.invert_f(
+    m0, sigma_prior, coords_array, num_iterations=3)
 v0, l, t0, c = m[1], m[2], m[3], m[4]
 mprior = [v0, l, t0, c]
 
@@ -142,7 +145,7 @@ sigma_prior = (
     [10, 125, 15000, 30, 100] if abs(slope) < 1
     else [10, 30, 500, 30, 100]
 )
-m, covm0, covm, f0_array, F_m = full_inversion(
+m, covm0, covm, f0_array, F_m = DI.doppfull_inversion(
     fobs, tobs, peaks_assos, mprior, sigma_prior,
     num_iterations=2, sigma=3, off_diagonal=False
 )
@@ -180,7 +183,7 @@ ax2.axvline(
 f0lab = sorted(f0_array)
 for pp in range(len(f0_array)):
     f0 = f0_array[pp]
-    ft = calc_ft(times, t0, f0, v0, l, c)
+    ft = DI.calc_ft(times, t0, f0, v0, l, c)
 
     ax2.plot(times, ft, '#377eb8', ls=(0, (5, 20)), linewidth=0.7)
     ax2.scatter(t0prime, f0, color='black', marker='x', s=30, zorder=10)

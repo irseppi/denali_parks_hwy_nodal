@@ -1,4 +1,4 @@
-# Analysis of Nodal Seismic Data collected along the Parks Highway in Feb-March of 2019
+# Analysis of Aircraft Signals in Nodal Seismic Data collected along the Parks Highway in Feb-March of 2019
 ## University of Alaska Fairbanks
 
 ## Reference

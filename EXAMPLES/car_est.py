@@ -12,59 +12,10 @@ repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from src.main_inv_fig_functions import remove_median, get_auto_picks_full
 from src.doppler_funcs import invert_f, calc_ft, full_inversion, load_waveform
-
-# Interactive picking of points on spectrogram for overtone curve
-def pick_points_on_spectrogram(times, frequencies, spec, vmin, vmax, prompt, axvline=None):
-    coords = []
-    plt.figure()
-    plt.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)
-    if axvline is not None:
-        plt.axvline(x=axvline, c='#377eb8', ls='--')
-    def onclick(event):
-        if event.xdata is not None and event.ydata is not None:
-            coords.append((event.xdata, event.ydata))
-            plt.scatter(event.xdata, event.ydata, color='black', marker='x')
-            plt.draw()
-            print('Clicked:', event.xdata, event.ydata)
-    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
-    plt.show(block=True)
-    return coords
-
-# Interactive picking of single points (overtone peaks)
-def pick_single_points(times, frequencies, spec, vmin, vmax, prompt, axvline=None):
-    peaks, freqpeak = [], []
-    plt.figure()
-    plt.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)
-    if axvline is not None:
-        plt.axvline(x=axvline, c='#377eb8', ls='--')
-    def onclick(event):
-        if event.xdata is not None and event.ydata is not None:
-            peaks.append(event.ydata)
-            freqpeak.append(event.xdata)
-            plt.scatter(event.xdata, event.ydata, color='black', marker='x')
-            plt.draw()
-            print('Clicked:', event.xdata, event.ydata)
-    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
-    plt.show(block=True)
-    return peaks, freqpeak
-
-# Interactive picking of time window for inversion
-def pick_time_window(times, frequencies, spec, vmin, vmax, tobs, fobs):
-    set_time = []
-    plt.figure()
-    plt.pcolormesh(times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, vmax=vmax)
-    plt.scatter(tobs, fobs, color='black', marker='x')
-    def onclick(event):
-        if event.xdata is not None:
-            set_time.append(event.xdata)
-            plt.scatter(event.xdata, event.ydata, color='red', marker='x')
-            plt.draw()
-            print('Clicked:', event.xdata, event.ydata)
-    plt.gcf().canvas.mpl_connect('button_press_event', onclick)
-    plt.show(block=True)
-    return set_time
+from src.main_inv_fig_functions import (
+    remove_median, get_auto_picks_full, pick_points_on_spectrogram, 
+    pick_single_points, pick_time_window)
 
 epoch_ts = (UTCDateTime(2019, 2, 22, 19, 40, 0) + 1740).timestamp
 

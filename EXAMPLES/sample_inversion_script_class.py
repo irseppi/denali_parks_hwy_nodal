@@ -1,15 +1,26 @@
+'''This script is the same as sample_inversion_script.py except it uses
+the DopplerInversion Class from the gls_inverison.py source code'''
+
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pathlib import Path
+from obspy.core import UTCDateTime
 from scipy.signal import spectrogram
 from obspy.clients.fdsn import Client
-from obspy.core import UTCDateTime
 from matplotlib.ticker import MaxNLocator
-from src.doppler_funcs_class import DopplerInversion as DI
+
+# --- Fix sys.path ---
+repo_root = Path(__file__).resolve().parents[1]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
+from src.doppler_funcs import calc_ft
+from src.gls_inversion import DopplerInversion as DI
 from src.main_inv_fig_functions import (
     remove_median, get_auto_picks_full, pick_points_on_spectrogram, 
     pick_single_points, pick_time_window)
-
 
 # Download waveform data from IRIS PH5WS
 client = Client(
@@ -55,7 +66,6 @@ while True:
     if input("Do you want to repick your points? (y or n)").lower() != 'y':
         break
 coords_array = np.array(coords)
-print(coords_array)
 
 # Estimate initial model parameters from picked points
 c = 320 #11.1  # Speed of sound (m/s)
@@ -76,19 +86,32 @@ slope = (
 l = -(
     (f0 * v0 ** 2 / c) * (1 - (v0 / c) ** 2) ** (-3 / 2)
 ) / slope  # Initial length estimate
-m0 = [f0, v0, l, t0, c]
-sigma_prior = [40, 1, 1, 200, 1]  # Initial prior uncertainties
+m0 = [v0, l, t0, c, f0]
+sigma_prior = [1, 1, 200, 1, 40]  # Initial prior uncertainties
+fobs = []
+tobs = []
+for t, f in coords_array:
+    tobs.append(t)
+    fobs.append(f)
 
+aircraft_inversion = DI(
+    fobs, tobs, m0, sigma_prior, num_iterations=3,
+	method='full', off_diagonal=False)
 # First inversion to refine model
-m, _, _, F_m = DI.invert_f(
-    m0, sigma_prior, coords_array, num_iterations=3)
-m0[0], m0[3] = m[0], m[3]
+m, _, _, _, F_m = aircraft_inversion.full_inversion(
+    [len(fobs)])
+m0[4], m0[2] = m[4], m[2]
 
 # Second inversion with wider priors
-sigma_prior = [150, 100, 10000, 200, 100]
-m, _, _, F_m = DI.invert_f(
-    m0, sigma_prior, coords_array, num_iterations=3)
-v0, l, t0, c = m[1], m[2], m[3], m[4]
+sigma_prior = [100, 10000, 200, 100, 150]
+
+aircraft_inversion = DI(
+    fobs, tobs, m0, sigma_prior, num_iterations=3,
+	method='full', off_diagonal=False)
+
+m, _, _, _, F_m = aircraft_inversion.full_inversion(
+    [len(fobs)])
+v0, l, t0, c = m[0], m[1], m[2], m[3]
 mprior = [v0, l, t0, c]
 
 # User picks overtone peaks
@@ -145,10 +168,14 @@ sigma_prior = (
     [10, 125, 15000, 30, 100] if abs(slope) < 1
     else [10, 30, 500, 30, 100]
 )
-m, covm0, covm, f0_array, F_m = DI.doppfull_inversion(
-    fobs, tobs, peaks_assos, mprior, sigma_prior,
-    num_iterations=2, sigma=3, off_diagonal=False
-)
+
+aircraft_inversion = DI(
+    fobs, tobs, mprior, sigma_prior, num_iterations=4,
+	method='full', off_diagonal=False)
+
+m, covm0, covm, f0_array, F_m = aircraft_inversion.full_inversion(
+    peaks_assos, sigma=3)
+
 v0, l, t0, c = m[0], m[1], m[2], m[3]
 Cpost, Cpost0 = np.sqrt(np.diag(covm)), np.sqrt(np.diag(covm0))
 
@@ -183,7 +210,7 @@ ax2.axvline(
 f0lab = sorted(f0_array)
 for pp in range(len(f0_array)):
     f0 = f0_array[pp]
-    ft = DI.calc_ft(times, t0, f0, v0, l, c)
+    ft = calc_ft(times, t0, f0, v0, l, c)
 
     ax2.plot(times, ft, '#377eb8', ls=(0, (5, 20)), linewidth=0.7)
     ax2.scatter(t0prime, f0, color='black', marker='x', s=30, zorder=10)

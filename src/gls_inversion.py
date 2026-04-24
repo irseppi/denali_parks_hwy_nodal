@@ -163,21 +163,19 @@ class DopplerInversion:
 		dnew = self.fpred
 		dobs = self.fobs
 		ndata = len(self.fobs)
-		m = self.mnew
-		tsigma = self.prior_sigma
+		m = np.array(self.mnew)
+		tsigma = self.sigma
 		mprior = np.array(self.mprior)
 		
 		sigma_obs = tsigma * np.ones((ndata))
 		cobs0 = np.diag(np.square(sigma_obs))
-		m = np.array(m)
-		mprior = np.array(self.mprior)
 		Cdfac = ndata
 		dnew = np.array(dnew)
 		dobs = np.array(dobs)
 		cobs = Cdfac * cobs0
 		icobs = la.inv(cobs)
 		icprior = la.inv(self.cprior)
-
+		print(dnew)
 		Sd = 0.5 * (dnew - dobs).T @ icobs @ (dnew - dobs)
 		Sm = 0.5 * (m - mprior).T @ icprior @ (m - mprior)
 		S = Sd + Sm
@@ -219,6 +217,7 @@ class DopplerInversion:
 
 		cprior0, cprior, Cd0, Cd, mnew = self.cprior_setup()
 		self.cprior = cprior
+
 		self.sigma = sigma
 
 		qv = 0
@@ -277,13 +276,13 @@ class DopplerInversion:
 				cum = cum + peaks_assos[p]
 
 			Gm = G
-			
+			self.fpred = fpred
 			gamma = (cprior @ Gm.T @ la.inv(Cd) @ (np.array(fpred) - self.fobs) 
 					+ (np.array(m) - np.array(self.mprior)))
 			H = (np.identity(len(mnew)) + cprior @ Gm.T @ la.inv(Cd) @ Gm)
 			dm = -la.inv(H) @ gamma
 			mnew = m + dm
-
+			self.mnew = mnew
 			unreasonable = (
 				[mn for mn in mnew[4:] 
 					if mn <= 5 or mn > 375] or
@@ -313,7 +312,7 @@ class DopplerInversion:
 				G_hold = G.copy()
 			f0_array = m[4:]
 			qv += 1
-			print(mnew)
+
 
 		Cpost = la.inv(Gm.T @ la.inv(Cd) @ Gm + la.inv(cprior))
 		Cpost0 = la.inv(Gm.T @ la.inv(Cd0) @ Gm + la.inv(cprior0))
@@ -325,5 +324,4 @@ class DopplerInversion:
 		if self.method == 'full':
 			return self.full_inversion(self.peaks_assos, 3)
 		else:
-			self.peaks_assos = [1] * self.num_overtones
 			return self.full_inversion(self.peaks_assos, 10)

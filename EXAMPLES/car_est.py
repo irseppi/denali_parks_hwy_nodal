@@ -1,3 +1,6 @@
+'''This script is the same as sample_inversion_script.py except it uses a car
+source rather than aircraft'''
+
 import sys
 import numpy as np
 import matplotlib.pyplot as plt

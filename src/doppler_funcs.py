@@ -588,20 +588,20 @@ def full_inversion(fobs, tobs, peaks_assos, mprior, sigma_prior, num_iterations 
 
 #########################################################################################################################################################################################################
 
-def load_waveform(sta, start_time, spec_window=120, component="Z"):
+def load_waveform(sta, arrive_time, spec_window=120, component="Z"):
 	"""
 	Load waveform data for a specific station and time window.
 
 	Args:
 		sta (str): Station code.
-		start_time (float): Acoustic wave arrival time in seconds since the epoch.
+		arrive_time (float): Acoustic wave arrival time in seconds since the epoch.
 		spec_window (int): Time window in seconds to trim the waveform data, default is 120 seconds.
 
 	Returns:
 		tuple: A tuple containing the waveform data, sampling frequency, time data correlating to waveform, and title
 	"""
 	
-	ht = datetime.fromtimestamp(start_time, tz=timezone.utc)
+	ht = datetime.fromtimestamp(arrive_time, tz=timezone.utc)
 
 	h = ht.hour
 	mins = ht.minute

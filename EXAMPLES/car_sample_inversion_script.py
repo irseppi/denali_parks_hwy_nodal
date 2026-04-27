@@ -72,20 +72,20 @@ for t, f in coords_array:
     tobs.append(t)
     fobs.append(f)
 
-aircraft_inversion = DI(
+car_inversion = DI(
     fobs, tobs, m0, sigma_prior, num_iterations=3, off_diagonal=False)
 # First inversion to refine model
-m, _, _, _, F_m = aircraft_inversion.full_inversion(
+m, _, _, _, F_m = car_inversion.full_inversion(
     [len(fobs)])
 m0[4], m0[2] = m[4], m[2]
 
 # Second inversion with wider priors
 sigma_prior = [100, 10000, 200, 100, 150]
 
-aircraft_inversion = DI(
+car_inversion = DI(
     fobs, tobs, m0, sigma_prior, num_iterations=3, off_diagonal=False)
 
-m, _, _, _, F_m = aircraft_inversion.full_inversion(
+m, _, _, _, F_m = car_inversion.full_inversion(
     [len(fobs)])
 v, d0, t0, c = m[0], m[1], m[2], m[3]
 mprior = [v, d0, t0, c]
@@ -110,10 +110,10 @@ sigma_prior = (
     else [10, 30, 500, 30, 100]
 )
 
-aircraft_inversion = DI(
+car_inversion = DI(
     fobs, tobs, mprior, sigma_prior, num_iterations=4, off_diagonal=False)
 
-m, covm0, covm, fs_array, F_m = aircraft_inversion.full_inversion(
+m, covm0, covm, fs_array, F_m = car_inversion.full_inversion(
     peaks_assos, sigma=3)
 
 v, d0, t0, c = m[0], m[1], m[2], m[3]

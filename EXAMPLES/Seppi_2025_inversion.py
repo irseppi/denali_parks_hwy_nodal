@@ -196,7 +196,6 @@ def inversion_process(month, day, flight_num, closest_time, sta, equip, repo_roo
         month, day, flight_num, closest_time, sta, equip, start_time, times, 
         frequencies, spec, t0, v0, l, c, sigma_prior,vmax, repo_root)
 
-
     for o in range(len(f0_array)):
         mprior.append(float(f0_array[o]))
 
@@ -243,9 +242,10 @@ def process_main(line, tracer, total_lines):
     BASE_DIR += f'/20190{month}{day}/{flight_num}/{sta}/'
 
     make_base_dir(BASE_DIR)
+    file_name = f'{BASE_DIR}{str(closest_time)}_{str(flight_num)}.png'
     plot_spectrogram(
         data, fs, t_wf, title, spec, times, frequencies, t0, v0, l, c, f0_array, 
-        F_m, MDF, covm0, flight_num, middle_index, closest_time, BASE_DIR, 
+        F_m, MDF, covm0, flight_num, middle_index, closest_time, file_name, 
         plot_show=False, gt = False)
 
     process = psutil.Process(os.getpid())

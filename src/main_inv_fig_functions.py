@@ -252,6 +252,7 @@ def plot_spectrogram(
     else:
         qnum = '__'
     if file_name is not None:
+        print('Saving figure to:', file_name)
         fig.savefig(file_name, dpi=600)
     plt.close(fig)
     gc.collect()

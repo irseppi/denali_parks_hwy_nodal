@@ -77,6 +77,7 @@ def plot_spectrogram(
     Returns:
         str: The user assigned quality number.
     """
+    print('Plotting spectrogram...')
     t0prime = t0 + d0/c
     if gt:
         type_inv = "[FH/GT]"
@@ -455,24 +456,17 @@ def overtone_picks(
 ##############################################################################################################################################################################################################
 
 def time_picks(
-        month, day, flight, sta, equip, tobs, fobs, closest_time, start_time, 
-        spec, times, frequencies, vmin, vmax, w, peaks_assos, make_picks=True):
+    tobs, fobs, start_time, spec, times, frequencies, vmin, vmax, w, 
+    peaks_assos, file_name, directory, make_picks=True):
     """
     Pick the points for the time shift. Specific to Seppi 2025 data structure
     and flightradar25 information needed.
 
     Args:
-
-        month (int): The month of the data.
-        day (int): The day of the data.
-        flight (int): The flight number.
-        sta (int or str): The station identifier.
-        equip (str): The equipment identifier.
         tobs (list): The time array.
         fobs (list): The frequency array.
-        closest_time (float): The time of closest approach.
         start_time (float): The start time of the spectrogram, to save for 
-            future refrence on plotting the spectrogram.
+            future reference on plotting the spectrogram.
         spec (numpy.ndarray): The spectrogram data.
         times (numpy.ndarray): The time array.
         frequencies (numpy.ndarray): The frequency array.
@@ -483,6 +477,8 @@ def time_picks(
         w (int): The number of peaks.
         peaks_assos (list or bool): The number of peaks associated with 
             each overtone.
+        file_name (str): The file path to save picks.
+        directory (str): The directory path.
         make_picks (bool): If you come to this function and no picks exist, 
             it will allow you to make new picks.
 
@@ -496,12 +492,11 @@ def time_picks(
     repo_root = Path(__file__).resolve().parents[1]
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    output3 = f'{repo_root}/input/data_picks/{equip}_data_picks/timepicks/'
-    output3 += f'2019-0{month}-{day}/{flight}/{sta}/{closest_time}_{flight}.csv'
 
-    if Path(output3).exists():
+
+    if Path(file_name).exists():
         set_time = []
-        with open(output3, 'r') as file:
+        with open(file_name, 'r') as file:
             for line in file:
                 pick_data = line.split(',')
                 set_time.append(float(pick_data[0]))
@@ -533,13 +528,12 @@ def time_picks(
         return tobs, fobs, peaks_assos
 
     elif make_picks:
-        BASE_DIR = f'{repo_root}/input/data_picks/{equip}_data_picks/timepicks'
-        BASE_DIR += f'/2019-0{month}-{day}/{flight}/{sta}/'
-        make_base_dir(BASE_DIR)
+
+        make_base_dir(directory)
         
         pick_again = 'y'
         while pick_again == 'y':
-            r3 = open(output3,'w')
+            r3 = open(file_name,'w')
             set_time = []
             plt.figure()
             plt.pcolormesh(

@@ -7,20 +7,19 @@ import os
 import sys
 import psutil
 import numpy as np
+import concurrent.futures
 
 from scipy.signal import spectrogram
 from pathlib import Path
 
-import concurrent.futures
 
 # --- Fix sys.path ---
 repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from src.doppler_funcs import (
-    make_base_dir, invert_f, full_inversion, load_waveform)
-
+from src.gls_inversion import DopplerInversion as DI
+from src.doppler_funcs import make_base_dir, load_waveform
 from src.main_inv_fig_functions import (
     time_picks, remove_median, plot_spectrogram, 
     get_auto_picks_full)
@@ -107,11 +106,12 @@ def get_overtone_picks(
 
     if len(fobs) == 0:
         return
+    DIR = f'{repo_root}/input/data_picks/{equip}_data_picks/timepicks/'
+    DIR += f'2019-0{month}-{day}/{flight_num}/{sta}/'
 
-    tobs, fobs, peaks_assos = time_picks(
-        month, day, flight_num, sta, equip, tobs, fobs, closest_time, 
-        start_time, spec, times, frequencies, 0, vmax, len(peaks), 
-        peaks_assos, make_picks=False)
+    file_name = f'{closest_time}_{flight_num}.csv'
+    tobs, fobs, peaks_assos = time_picks(tobs, fobs, start_time, spec, times, frequencies, 
+                        0, vmax, len(peaks), peaks_assos, file_name, DIR, make_picks=True)
 
     return tobs, fobs, peaks_assos, f0_array
 
@@ -133,7 +133,7 @@ def inversion_process(month, day, flight_num, closest_time, sta, equip, repo_roo
 
     #find the closest coordinate to f0
     closest_index = np.argmin(np.abs(coords_array[:, 1] - fm))
-    f0 = coords_array[closest_index, 1] 
+    fs = coords_array[closest_index, 1] 
     t0 = coords_array[closest_index, 0]  
     t_hold = np.inf
     for i,t in enumerate(coords_array[:, 0]):
@@ -142,19 +142,19 @@ def inversion_process(month, day, flight_num, closest_time, sta, equip, repo_roo
                 t_hold = abs(t - t0)
                 second_index = i
 
-    v0 = c*abs(fa-fr) / (2 * f0)
+    v = c*abs(fa-fr) / (2 * fs)
     y_diff = (coords_array[closest_index,1] - coords_array[second_index,1]) 
     xdiff = (coords_array[closest_index,0] - coords_array[second_index,0])
 
     slope = y_diff/xdiff
-    l = -((f0*v0**2/c)*(1-(v0/c)**2)**(-3/2))/slope 
-    m0 = [f0, v0, l, t0, c]
-    print('Initial model:', m0)
+    d0 = -((fs*v**2/c)*(1-(v/c)**2)**(-3/2))/slope 
+    m0 = [v, d0, t0, c, fs]
+    #print('Initial model:', m0)
 
-    data, fs, t_wf, title = load_waveform(sta, (start_time+120))
+    data, sampling_rate, t_wf, title = load_waveform(sta, (start_time+120))
     frequencies, times, Sxx = spectrogram(
-        data, fs, scaling='density', nperseg=fs, noverlap=fs * .9, 
-        detrend = 'constant')
+        data, sampling_rate, scaling='density', nperseg=sampling_rate, 
+        noverlap=sampling_rate * .9, detrend = 'constant')
     
     if len(times) == 0 or len(frequencies) == 0 or len(Sxx) == 0:
         return
@@ -165,39 +165,50 @@ def inversion_process(month, day, flight_num, closest_time, sta, equip, repo_roo
 
     vmax = np.max(middle_column) 
  
-    m0 = [f0, v0, l, t0, c]
+    m0 = [v, d0, t0, c, fs]
     sigma_prior = [40, 1, 1, 200, 1]
-    m,_,_, F_m = invert_f(m0, sigma_prior, coords_array, num_iterations=3)
-    m0[0] = m[0]
-    m0[3] = m[3]
+    fobs = []
+    tobs = []
+    for t, f in coords_array:
+        tobs.append(t)
+        fobs.append(f)
+    aircraft_inversion = DI(
+    fobs, tobs, m0, sigma_prior, num_iterations=3, off_diagonal=False)
+    # First inversion to refine model
+    m, _, _, _, F_m = aircraft_inversion.full_inversion(
+        [len(fobs)])
+    m0[4] = m[4]
+    m0[2] = m[2]
 
-    sigma_f0 = 150
-    sigma_v0 = 100
-    sigma_l = 10000
+    sigma_v = 100
+    sigma_d0 = 10000
     sigma_t0 = 200
     sigma_c = 100
+    sigma_fs = 150
 
-    m0 = [f0, v0, l, t0, c]
-    sigma_prior = [sigma_f0, sigma_v0, sigma_l, sigma_t0, sigma_c]
-    m,_,_, F_m = invert_f(
-        m0,[sigma_f0, sigma_v0, sigma_l, sigma_t0, sigma_c],
-        coords_array, num_iterations=3)
-    v0 = m[1]
-    l = m[2]
-    t0 = m[3]
-    c = m[4]
+    m0 = [v, d0, t0, c, fs]
+    sigma_prior = [sigma_v, sigma_d0, sigma_t0, sigma_c, sigma_fs]
+    aircraft_inversion = DI(
+    fobs, tobs, m0, sigma_prior, num_iterations=3, off_diagonal=False)
+    # First inversion to refine model
+    m, _, _, _, F_m = aircraft_inversion.full_inversion(
+        [len(fobs)])
+    v = m[0]
+    d0 = m[1]
+    t0 = m[2]
+    c = m[3]
     mprior = []
-    mprior.append(v0)
-    mprior.append(l)
+    mprior.append(v)
+    mprior.append(d0)
     mprior.append(t0)
     mprior.append(c)
 
-    tobs, fobs, peaks_assos, f0_array = get_overtone_picks(
+    tobs, fobs, peaks_assos, fs_array = get_overtone_picks(
         month, day, flight_num, closest_time, sta, equip, start_time, times, 
-        frequencies, spec, t0, v0, l, c, sigma_prior,vmax, repo_root)
-
-    for o in range(len(f0_array)):
-        mprior.append(float(f0_array[o]))
+        frequencies, spec, t0, v, d0, c, sigma_prior, vmax, repo_root)
+    print('Overtone picks obtained for station', sta, 'and flight', flight_num)
+    for o in range(len(fs_array)):
+        mprior.append(float(fs_array[o]))
 
     if abs(slope) < 1:
         sigma_prior = [10, 125, 15000, 30, 100]
@@ -206,27 +217,28 @@ def inversion_process(month, day, flight_num, closest_time, sta, equip, repo_roo
     if equip in jet:
         sigma_prior = [100, 300, 50000, 100, 100]
 
-    
-    m, covm0, covm, f0_array, F_m = full_inversion(
-        fobs, tobs, peaks_assos, mprior, sigma_prior, num_iterations=2, sigma=3, 
-        off_diagonal=False)
+    print('Performing final inversion...')
+    aircraft_inversion = DI(
+        fobs, tobs, mprior, sigma_prior, num_iterations=4, off_diagonal=False)
+
+    m, covm0, covm, fs_array, F_m = aircraft_inversion.full_inversion(
+        peaks_assos, sigma=3)
 
 
-    v0 = m[0]
-    l = m[1]
+    v = m[0]
+    d0 = m[1]
     t0 = m[2]
     c = m[3]
 
     covm = np.sqrt(np.diag(covm))
     covm0 = np.sqrt(np.diag(covm0))
-
     return (
-       data, fs, t_wf, title, spec, times, frequencies, t0, v0, l, c, f0_array, 
+       data, sampling_rate, t_wf, title, spec, times, frequencies, t0, v, d0, c, fs_array, 
         F_m, MDF, covm0, flight_num, middle_index, closest_time
     )
     
 def process_main(line, tracer, total_lines):
-    print((tracer/total_lines)*100, '%')
+    #print((tracer/total_lines)*100, '%')
     month, day, flight_num, closest_time, sta, equip = parse_line(line)
     fig_path = 'inversion_results_ngt/'
     folder_spec = equip + '_spec_c'
@@ -234,18 +246,18 @@ def process_main(line, tracer, total_lines):
     DIR = f'{fig_path}{folder_spec}/2019-0{month}-{day}/{flight_num}/{sta}/'
     if os.path.exists(DIR):
         return
-    (data, fs, t_wf, title, spec, times, frequencies, t0, v0, l, c, f0_array, 
+    (data, sampling_rate, t_wf, title, spec, times, frequencies, t0, v, d0, c, fs_array, 
      F_m, MDF, covm0, flight_num, middle_index, closest_time
      ) = inversion_process(month, day, flight_num, closest_time, sta, equip, repo_root)
-
+    print('Inversion complete for station', sta, 'and flight', flight_num)
     BASE_DIR = f'{repo_root}/output/{fig_path}{folder_spec}'
     BASE_DIR += f'/20190{month}{day}/{flight_num}/{sta}/'
 
     make_base_dir(BASE_DIR)
     file_name = f'{BASE_DIR}{str(closest_time)}_{str(flight_num)}.png'
     plot_spectrogram(
-        data, fs, t_wf, title, spec, times, frequencies, t0, v0, l, c, f0_array, 
-        F_m, MDF, covm0, flight_num, middle_index, closest_time, file_name, 
+        data, sampling_rate, t_wf, title, spec, times, frequencies, t0, v, d0, 
+        c, fs_array, F_m, MDF, covm0, flight_num, middle_index, closest_time, file_name, 
         plot_show=False, gt = False)
 
     process = psutil.Process(os.getpid())

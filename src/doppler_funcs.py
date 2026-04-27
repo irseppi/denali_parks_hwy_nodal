@@ -217,9 +217,9 @@ def S(dnew, dobs, ndata, m, mprior, cprior, tsigma):
 	# total misfit
 	S = Sd + Sm
 
-	print("Model Misfit:", Sm)
-	print("Data Misfit:", Sd)
-	print("Total Misfit:", S)
+	#print("Model Misfit:", Sm)
+	#print("Data Misfit:", Sd)
+	#print("Total Misfit:", S)
 	return Sd
 
 ###################################################################################################################################################################
@@ -425,7 +425,7 @@ def invert_f(mprior, prior_sigma, coords_array, num_iterations, sigma = 10, off_
 		else:
 			G_hold = G.copy()
 			n += 1
-		print(mnew)
+		#print(mnew)
 
 	Cpost = la.inv(G.T@la.pinv(Cd)@G + la.inv(cprior))
 	Cpost0 = la.inv(G.T@la.pinv(Cd0)@G + la.inv(cprior0))
@@ -578,7 +578,7 @@ def full_inversion(fobs, tobs, peaks_assos, mprior, sigma_prior, num_iterations 
 			G_hold = G.copy()
 		f0_array = m[4:]
 		qv += 1
-		print(mnew)
+		#print(mnew)
 
 	Cpost = la.inv(Gm.T@la.inv(Cd)@Gm + la.inv(cprior))
 	Cpost0 = la.inv(Gm.T@la.inv(Cd0)@Gm + la.inv(cprior0))

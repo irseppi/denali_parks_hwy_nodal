@@ -2,7 +2,91 @@
 import numpy as np
 import numpy.linalg as la
 
-class DopplerInversion:
+class DopplerCalc:
+	def __init__(self, t0, v, d0, c, fs):
+		self.t0 = t0
+		self.v = v
+		self.d0 = d0
+		self.c = c
+		self.fs = fs
+		
+	def calc_t(self, tprime):
+		t0 = self.t0
+		v = self.v
+		d0 = self.d0
+		c = self.c
+
+		diff_t = tprime - t0
+		vel_diff = 1 - v**2/c**2
+		sqrt_term = np.sqrt((diff_t)**2 - (vel_diff)*((diff_t)**2 - d0**2/c**2))
+		t = (diff_t - sqrt_term)/(vel_diff)
+
+		return t
+	
+	def calc_ft(self, times):
+		"""
+		Calculate the frequency at each given time using the model parameters.
+
+		Args:
+			times (list): List of time values.
+			t0 (float): The time at which the central frequency of the overtones 
+				occur, when the aircraft is at the closest approach to the 
+				station.
+			fs (float): Source frequency produced by the aircraft.
+			v (float): Velocity of the aircraft.
+			d0 (float): Distance between the station and the aircraft at the 
+				closest approach.
+			c (float): Speed of sound.
+
+		Returns:
+			list: List of calculated frequency values.
+		"""
+		
+		fs = self.fs
+		v = self.v
+		d0 = self.d0
+		c = self.c
+
+		ft = []
+		for tprime in times:
+			t = self.calc_t(tprime)
+			ft0p = fs/(1+(v/c)*(v*t)/(np.sqrt(d0**2+(v*t)**2)))
+									
+			ft.append(ft0p)
+		return ft
+
+	def calc_fs(self, tprime, ft0p):
+		"""
+		Calculate the fundamental frequency produced by an aircraft 
+		(where the wave is generated) given the model parameters.
+
+		Parameters:
+		tprime (float): Time at which a frequency (ft0p) is observed on the 
+			station.
+		t0 (float):  The time at which the central frequency of the overtones 
+			occur.
+		ft0p (float): Frequency recorded on the seismometer, picked from the 
+			overtone doppler curve.
+		v (float): Velocity of the aircraft.
+		d0 (float): Distance between the station and the aircraft at the 
+			closest approach.
+		c (float): Speed of sound.
+
+		Returns:
+		fs (float): Source frequency produced by the aircraft. 
+			(Frequency at the source.) 
+		"""
+
+		v = self.v
+		d0 = self.d0
+		c = self.c
+
+		t = self.calc_t(tprime)
+		fs = ft0p*(1+(v/c)*(v*t)/(np.sqrt(d0**2+(v*t)**2)))
+
+		return fs
+
+class DopplerInversion(DopplerCalc):
 
 	def __init__(self, fobs, tobs, mprior, prior_sigma, num_iterations=4, 
 			  off_diagonal=False):
@@ -309,6 +393,7 @@ class DopplerInversion:
 			dm = -la.inv(H) @ gamma
 			mnew = m + dm
 			self.mnew = mnew
+
 			unreasonable = (
 				[mn for mn in mnew[4:] 
 					if mn <= 5 or mn > 375] or

@@ -1,277 +1,282 @@
 import gc
 from os import times
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 from pathlib import Path
 from scipy.signal import find_peaks
 from matplotlib.ticker import MaxNLocator
-from src.doppler_funcs import make_base_dir, calc_ft, calc_f0, invert_f
+from src.get_save_data import make_base_dir
+from src.doppler_funcs import calc_ft, calc_f0, invert_f
+
+class SpecPlot:
+    def __init__(self, Sxx, sampling_rate, t_wf, data, times, frequencies, 
+                 tarrive, spec_window=120):
+        self.Sxx = Sxx
+        self.sampling_rate = sampling_rate
+        self.t_wf = t_wf
+        self.data = data
+        self.times = times
+        self.frequencies = frequencies
+        self.tarrive = tarrive
+        self.start_time = tarrive - spec_window
+
+    def remove_median(self):
+        """
+        Remove the median from the spectrogram.
+
+        Args:
+            Sxx (array): The spectrogram data.
+
+        Returns:
+            spec: The spectrogram data with the median removed
+            MDF: The median removed from the spectrogram
+        """
+
+        a, b = self.Sxx.shape
+
+        MDF = np.zeros((a,b))
+        for row in range(len(self.Sxx)):
+            median = np.median(self.Sxx[row])
+            MDF[row, :] = median
+
+        # Avoid log10(0) by replacing zeros with a small positive value
+        Sxx_safe = np.where(self.Sxx == 0, 1e-10, self.Sxx)
+        MDF_safe = np.where(MDF == 0, 1e-10, MDF)
+
+        spec = 10 * np.log10(Sxx_safe) - (10 * np.log10(MDF_safe))
+        self.spec = spec
+        self.MDF = MDF
+        return spec, MDF
 
 
-################################################################################
+    def plot_spectrogram(self, title, t0, v, d0, c, fs_array,
+                        F_m, Cpost0, middle_index, file_name=None, 
+                        plot_show=True, gt = True):
+        """
+        Plot and save the waveform, unfiltered, and the spectrogram of the given 
+        data. Include the estimated curve using the final model parameters outputs 
+        from the inversions.
 
-def remove_median(Sxx):
-    """
-    Remove the median from the spectrogram.
+        Args:
+            data (np.ndarray): The waveform data.
+            sampling_rate (int): The sampling frequency.
+            t_wf (np.ndarray): The time array for the waveform.
+            title (str): The title of the plot.
+            spec (np.ndarray): The spectrogram data (2D array).
+            times (np.ndarray): The time array for the spectrogram.
+            frequencies (np.ndarray): The frequency array for the spectrogram.
+            t0 (float): The estimated time of aircraft closest approach to the 
+                station.
+            v (float): The velocity.
+            d0 (float): The distance.
+            c (float): The speed of sound.
+            fs_array (np.ndarray): The array of frequencies.
+            F_m (float or str): The data misfit value.
+            MDF (np.ndarray): Median removed from spectrogram (2D array).
+            Cpost0 (np.ndarray): The normalized posterior covariance matrix.
+            middle_index (int): The index of the middle column.
+            file_name (str, optional): The name of the file to save the plot. 
+                If None, the plot will not be saved. Defaults to None.
+            plot_show (bool): If True, show the plot and ask user to provide a 
+                quality number. If False, save the plot without showing it. 
+            gt (bool): If True, the ground truth is used for the initial model in 
+                the inversion.
 
-    Args:
-        Sxx (array): The spectrogram data.
+        Returns:
+            str: The user assigned quality number.
+        """
+        print('Plotting spectrogram...')
+        t0prime = t0 + d0/c
+        if gt:
+            type_inv = "[FH/GT]"
+        else:
+            type_inv = "[FH/NGT]"
+        closest_index = np.argmin(np.abs(self.times - t0))
+        closest_index = np.argmin(np.abs(t0 - self.times))
+        arrive_time = self.spec[:,closest_index]
+        for i in range(len(arrive_time)):
+            if arrive_time[i] < 0:
+                arrive_time[i] = 0
+        # Plot settings and calculations
+        vmin = np.min(arrive_time) 
+        vmax = np.max(arrive_time)
 
-    Returns:
-        spec: The spectrogram data with the median removed
-        MDF: The median removed from the spectrogram
-    """
+        fig, (ax1, ax2) = plt.subplots(2, 1, sharex=False, figsize=(8,6))     
+        ax1.plot(self.t_wf, self.data, 'k', linewidth=0.5)
+        ax1.set_title(title)
 
-    a, b = Sxx.shape
+        ax1.margins(x=0)
+        ax1.set_position([0.125, 0.6, 0.775, 0.3]) 
+        ax1.set_ylabel('Counts')
 
-    MDF = np.zeros((a,b))
-    for row in range(len(Sxx)):
-        median = np.median(Sxx[row])
-        MDF[row, :] = median
+        # Plot spectrogram
+        cax = ax2.pcolormesh(
+            self.times, self.frequencies, self.spec, shading='gouraud', cmap='pink_r', vmin=vmin, 
+            vmax=vmax)		
+        ax2.set_xlabel('Time (s)')
 
-    # Avoid log10(0) by replacing zeros with a small positive value
-    Sxx_safe = np.where(Sxx == 0, 1e-10, Sxx)
-    MDF_safe = np.where(MDF == 0, 1e-10, MDF)
+        ax2.axvline(
+            x=t0prime, c = '#377eb8', ls = '--', linewidth=0.5, 
+            label= "t\u2080' = " + "%.2f" % t0prime +' s')
+        ax2.axvline(
+            x=t0, c = '#e41a1c', ls = '--', linewidth=0.7,
+            label= "t\u2080 = " + "%.2f" % t0 +' s')
 
-    spec = 10 * np.log10(Sxx_safe) - (10 * np.log10(MDF_safe))
-    return spec, MDF
+        for pp in range(len(fs_array)):
+            fs = fs_array[pp]
+            ft = calc_ft(self.times, t0, fs, v, d0, c)
 
-################################################################################
+            ax2.plot(self.times, ft, '#377eb8', ls = (0,(5,20)), linewidth=0.7)
+            ax2.scatter(t0prime, fs, color='black', marker='x', s=30, zorder=10)
 
-def plot_spectrogram(
-        data, sampling_rate, t_wf, title, spec, times, frequencies, t0, v, d0, 
-        c, fs_array, F_m, MDF, Cpost0, middle_index, file_name=None, 
-        plot_show=True, gt = True):
-    """
-    Plot and save the waveform, unfiltered, and the spectrogram of the given 
-    data. Include the estimated curve using the final model parameters outputs 
-    from the inversions.
+        text_size = 'x-small'
+        fslab = sorted(fs_array)
 
-    Args:
-        data (np.ndarray): The waveform data.
-        sampling_rate (int): The sampling frequency.
-        t_wf (np.ndarray): The time array for the waveform.
-        title (str): The title of the plot.
-        spec (np.ndarray): The spectrogram data (2D array).
-        times (np.ndarray): The time array for the spectrogram.
-        frequencies (np.ndarray): The frequency array for the spectrogram.
-        t0 (float): The estimated time of aircraft closest approach to the 
-            station.
-        v (float): The velocity.
-        d0 (float): The distance.
-        c (float): The speed of sound.
-        fs_array (np.ndarray): The array of frequencies.
-        F_m (float or str): The data misfit value.
-        MDF (np.ndarray): Median removed from spectrogram (2D array).
-        Cpost0 (np.ndarray): The normalized posterior covariance matrix.
-        middle_index (int): The index of the middle column.
-        file_name (str, optional): The name of the file to save the plot. 
-            If None, the plot will not be saved. Defaults to None.
-        plot_show (bool): If True, show the plot and ask user to provide a 
-            quality number. If False, save the plot without showing it. 
-        gt (bool): If True, the ground truth is used for the initial model in 
-            the inversion.
+        if len(fs_array) <= 1:
+            med_df = "NaN"
+            mad_df = "NaN"
+        else:
+            #Generate random samples of fs values withing their sigma from the  
+            #covariance matrix. Calculate the median of the differences and MAD 
+            # to obtain error
+            f_range = []
+            NTRY = 1000
+            for N in range(NTRY):
+                ftry = []
+                for c_index  in range(4, len(Cpost0)):
+                    xmin = fs_array[c_index-4] - Cpost0[c_index]
+                    xmax = fs_array[c_index-4] + Cpost0[c_index]
+                    xtry = xmin + (xmax-xmin)*np.random.rand()
+                    ftry.append(xtry)
 
-    Returns:
-        str: The user assigned quality number.
-    """
-    print('Plotting spectrogram...')
-    t0prime = t0 + d0/c
-    if gt:
-        type_inv = "[FH/GT]"
-    else:
-        type_inv = "[FH/NGT]"
-    closest_index = np.argmin(np.abs(times - t0))
-    closest_index = np.argmin(np.abs(t0 - times))
-    arrive_time = spec[:,closest_index]
-    for i in range(len(arrive_time)):
-        if arrive_time[i] < 0:
-            arrive_time[i] = 0
-    # Plot settings and calculations
-    vmin = np.min(arrive_time) 
-    vmax = np.max(arrive_time)
+                ftry = np.sort(ftry)
+                f1 = []
+                for g in range(len(ftry)):
+                    if g == 0:
+                        continue
+                    diff = ftry[g] - ftry[g - 1]
+                    f1.append(diff)
+                med = np.nanmedian(f1)
+                f_range.append(med)
+            med_df = np.nanmedian(f_range)
+            mad_df = np.nanmedian(np.abs(f_range - med_df))
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=False, figsize=(8,6))     
-    ax1.plot(t_wf, data, 'k', linewidth=0.5)
-    ax1.set_title(title)
+        if len(fslab) > 10:
+            # Split fslab into lines of 10 entries each
+            fslab_lines = []
+            for i in range(0, len(fslab), 10):
+                line = ', '.join(["%.2f" % f for f in fslab[i:i+10]])
+                fslab_lines.append(line)
+            fslab_str = (',\n').join(fslab_lines)
+            fslab_str = '[' + fslab_str + ']'
+        else:
+            fslab_str = '[' + ', '.join(["%.2f" % f for f in fslab]) + ']'
 
-    ax1.margins(x=0)
-    ax1.set_position([0.125, 0.6, 0.775, 0.3]) 
-    ax1.set_ylabel('Counts')
-
-    # Plot spectrogram
-    cax = ax2.pcolormesh(
-        times, frequencies, spec, shading='gouraud', cmap='pink_r', vmin=vmin, 
-        vmax=vmax)		
-    ax2.set_xlabel('Time (s)')
-
-    ax2.axvline(
-        x=t0prime, c = '#377eb8', ls = '--', linewidth=0.5, 
-        label= "t\u2080' = " + "%.2f" % t0prime +' s')
-    ax2.axvline(
-        x=t0, c = '#e41a1c', ls = '--', linewidth=0.7,
-        label= "t\u2080 = " + "%.2f" % t0 +' s')
-
-    for pp in range(len(fs_array)):
-        fs = fs_array[pp]
-        ft = calc_ft(times, t0, fs, v, d0, c)
-
-        ax2.plot(times, ft, '#377eb8', ls = (0,(5,20)), linewidth=0.7)
-        ax2.scatter(t0prime, fs, color='black', marker='x', s=30, zorder=10)
-
-    text_size = 'x-small'
-    fslab = sorted(fs_array)
-
-    if len(fs_array) <= 1:
-        med_df = "NaN"
-        mad_df = "NaN"
-    else:
-        #Generate random samples of fs values withing their sigma from the  
-        #covariance matrix. Calculate the median of the differences and MAD 
-        # to obtain error
-        f_range = []
-        NTRY = 1000
-        for N in range(NTRY):
-            ftry = []
-            for c_index  in range(4, len(Cpost0)):
-                xmin = fs_array[c_index-4] - Cpost0[c_index]
-                xmax = fs_array[c_index-4] + Cpost0[c_index]
-                xtry = xmin + (xmax-xmin)*np.random.rand()
-                ftry.append(xtry)
-
-            ftry = np.sort(ftry)
-            f1 = []
-            for g in range(len(ftry)):
-                if g == 0:
-                    continue
-                diff = ftry[g] - ftry[g - 1]
-                f1.append(diff)
-            med = np.nanmedian(f1)
-            f_range.append(med)
-        med_df = np.nanmedian(f_range)
-        mad_df = np.nanmedian(np.abs(f_range - med_df))
-
-    if len(fslab) > 10:
-        # Split fslab into lines of 10 entries each
-        fslab_lines = []
-        for i in range(0, len(fslab), 10):
-            line = ', '.join(["%.2f" % f for f in fslab[i:i+10]])
-            fslab_lines.append(line)
-        fslab_str = (',\n').join(fslab_lines)
-        fslab_str = '[' + fslab_str + ']'
-    else:
-        fslab_str = '[' + ', '.join(["%.2f" % f for f in fslab]) + ']'
-
-    if isinstance(F_m, str):
-         if med_df == "NaN":
-             ax2.set_title(
-                 "t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
-                 + ' s, v = ' + "%.2f" % v +' \u00B1 ' + "%.2f" % Cpost0[0]
-                 + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
-                 + ' m/s, d\u2080 = '+ "%.2f" % d0 + ' \u00B1 ' 
-                 + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + fslab_str 
-                 + ' \u00B1 ' + "%.2f" % np.median(Cpost0[4:]) + ' Hz'
-                + '\n[' + F_m + ']' + ' ' + type_inv, fontsize=text_size)
-         else:
+        if isinstance(F_m, str):
+            if med_df == "NaN":
+                ax2.set_title(
+                    "t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
+                    + ' s, v = ' + "%.2f" % v +' \u00B1 ' + "%.2f" % Cpost0[0]
+                    + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
+                    + ' m/s, d\u2080 = '+ "%.2f" % d0 + ' \u00B1 ' 
+                    + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + fslab_str 
+                    + ' \u00B1 ' + "%.2f" % np.median(Cpost0[4:]) + ' Hz'
+                    + '\n[' + F_m + ']' + ' ' + type_inv, fontsize=text_size)
+            else:
+                ax2.set_title(
+                    "t\u2080 = " + "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
+                    + ' s, v = ' + "%.2f" % v +' \u00B1 ' + "%.2f" % Cpost0[0] 
+                    + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
+                    + ' m/s, d\u2080 = '+ "%.2f" % d0 +' \u00B1 ' 
+                    + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' 
+                    + fslab_str + ' \u00B1 ' + "%.2f" % np.median(Cpost0[4:]) 
+                    + ' Hz, df\u209B = ' + "%.2f" % med_df + ' \u00B1 ' 
+                    + "%.2f" % mad_df + ' Hz\n[' + F_m + ']' + ' ' 
+                    + type_inv, fontsize=text_size)
+                
+        elif med_df == "NaN":
+            ax2.set_title(
+                "t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
+                + ' s, v = ' + "%.2f" % v +' \u00B1 ' + "%.2f" % Cpost0[0] 
+                + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
+                + ' m/s, d\u2080 = '+ "%.2f" % d0 + ' \u00B1 ' 
+                + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + fslab_str 
+                + ' \u00B1 ' + "%.2f" % np.median(Cpost0[4:]) + ' Hz\nMisfit: ' 
+                + "%.4f" % F_m + ' ' + type_inv, fontsize=text_size)
+        else:
             ax2.set_title(
                 "t\u2080 = " + "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
                 + ' s, v = ' + "%.2f" % v +' \u00B1 ' + "%.2f" % Cpost0[0] 
                 + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
-                + ' m/s, d\u2080 = '+ "%.2f" % d0 +' \u00B1 ' 
-                + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' 
-                + fslab_str + ' \u00B1 ' + "%.2f" % np.median(Cpost0[4:]) 
-                + ' Hz, df\u209B = ' + "%.2f" % med_df + ' \u00B1 ' 
-                + "%.2f" % mad_df + ' Hz\n[' + F_m + ']' + ' ' 
-                + type_inv, fontsize=text_size)
-            
-    elif med_df == "NaN":
-        ax2.set_title(
-            "t\u2080 = "+ "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
-            + ' s, v = ' + "%.2f" % v +' \u00B1 ' + "%.2f" % Cpost0[0] 
-            + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
-            + ' m/s, d\u2080 = '+ "%.2f" % d0 + ' \u00B1 ' 
-            + "%.2f" % Cpost0[1] + ' m, \n' + 'f\u209B = ' + fslab_str 
-            + ' \u00B1 ' + "%.2f" % np.median(Cpost0[4:]) + ' Hz\nMisfit: ' 
-            + "%.4f" % F_m + ' ' + type_inv, fontsize=text_size)
-    else:
-        ax2.set_title(
-            "t\u2080 = " + "%.2f" % t0 + ' \u00B1 ' + "%.2f" % Cpost0[2] 
-            + ' s, v = ' + "%.2f" % v +' \u00B1 ' + "%.2f" % Cpost0[0] 
-            + ' m/s, c = ' + "%.2f" % c +' \u00B1 ' + "%.2f" % Cpost0[3] 
-            + ' m/s, d\u2080 = '+ "%.2f" % d0 +' \u00B1 ' + "%.2f" % Cpost0[1] 
-            + ' m, \n' + 'f\u209B = ' + fslab_str + ' \u00B1 ' 
-            + "%.2f" % np.median(Cpost0[4:]) +' Hz, df\u209B = ' 
-            + "%.2f" % med_df + ' \u00B1 ' + "%.2f" % mad_df + ' Hz\nMisfit: ' 
-            + "%.4f" % F_m + ' ' + type_inv, fontsize=text_size)
+                + ' m/s, d\u2080 = '+ "%.2f" % d0 +' \u00B1 ' + "%.2f" % Cpost0[1] 
+                + ' m, \n' + 'f\u209B = ' + fslab_str + ' \u00B1 ' 
+                + "%.2f" % np.median(Cpost0[4:]) +' Hz, df\u209B = ' 
+                + "%.2f" % med_df + ' \u00B1 ' + "%.2f" % mad_df + ' Hz\nMisfit: ' 
+                + "%.4f" % F_m + ' ' + type_inv, fontsize=text_size)
 
-    ax2.legend(loc='upper right',fontsize = 'small')
-    ax2.set_ylabel('Frequency (Hz)')
-    ax1.set_xlim(0,max(t_wf))
-    ax2.set_xlim(0,max(t_wf))
-    ax2.margins(x=0)
-    ax3 = fig.add_axes([0.9, 0.11, 0.015, 0.35])
+        ax2.legend(loc='upper right',fontsize = 'small')
+        ax2.set_ylabel('Frequency (Hz)')
+        ax1.set_xlim(0,max(self.t_wf))
+        ax2.set_xlim(0,max(self.t_wf))
+        ax2.margins(x=0)
+        ax3 = fig.add_axes([0.9, 0.11, 0.015, 0.35])
 
-    # Set colorbar with integer ticks only
-    cbar = plt.colorbar(mappable=cax, cax=ax3)
-    cbar.locator = MaxNLocator(integer=True)
-    cbar.update_ticks()
-    ax3.set_ylabel('Relative Amplitude (dB)')
+        # Set colorbar with integer ticks only
+        cbar = plt.colorbar(mappable=cax, cax=ax3)
+        cbar.locator = MaxNLocator(integer=True)
+        cbar.update_ticks()
+        ax3.set_ylabel('Relative Amplitude (dB)')
 
-    ax2.margins(x=0)
-    ax2.set_ylim(0, int(sampling_rate/2))
+        ax2.margins(x=0)
+        ax2.set_ylim(0, int(self.sampling_rate/2))
 
-    ax1.tick_params(axis='both', which='major', labelsize=9)
-    ax2.tick_params(axis='both', which='major', labelsize=9)
-    ax3.tick_params(axis='both', which='major', labelsize=9)
-    cbar.ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    cbar.update_ticks()
+        ax1.tick_params(axis='both', which='major', labelsize=9)
+        ax2.tick_params(axis='both', which='major', labelsize=9)
+        ax3.tick_params(axis='both', which='major', labelsize=9)
+        cbar.ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        cbar.update_ticks()
 
-    # Plot overlay
-    spec2 = 10 * np.log10(MDF)
-    middle_column2 = spec2[:, middle_index]
-    vmin2 = np.min(middle_column2)
-    vmax2 = np.max(middle_column2)
+        # Plot overlay
+        spec2 = 10 * np.log10(self.MDF)
+        middle_column2 = spec2[:, middle_index]
+        vmin2 = np.min(middle_column2)
+        vmax2 = np.max(middle_column2)
 
-    # Create ax4 and plot on the same y-axis as ax2
-    ax4 = fig.add_axes([0.125, 0.11, 0.07, 0.35], sharey=ax2) 
-    ax4.plot(middle_column2, frequencies, c='#ff7f00')  
-    ax4.set_ylim(0, int(sampling_rate/2))
-    ax4.set_xlim(vmax2*1.1, vmin2) 
-    ax4.tick_params(
-        left=False, right=False, labelleft=False, labelbottom=False, 
-        bottom=False)
-    
-    ax4.grid(axis='y')
+        # Create ax4 and plot on the same y-axis as ax2
+        ax4 = fig.add_axes([0.125, 0.11, 0.07, 0.35], sharey=ax2) 
+        ax4.plot(middle_column2, self.frequencies, c='#ff7f00')  
+        ax4.set_ylim(0, int(self.sampling_rate/2))
+        ax4.set_xlim(vmax2*1.1, vmin2) 
+        ax4.tick_params(
+            left=False, right=False, labelleft=False, labelbottom=False, 
+            bottom=False)
+        
+        ax4.grid(axis='y')
 
-    if plot_show:
-        plt.show()     
-        qnum = input(
-            'What quality number would you give this?(first num for data ' \
-            'quality(0-3), second for ability to fit model to data(0-1))')
-    else:
-        qnum = '__'
-    if file_name is not None:
-        print('Saving figure to:', file_name)
-        fig.savefig(file_name, dpi=600)
-    plt.close(fig)
-    gc.collect()
+        if plot_show:
+            plt.show()     
+            qnum = input(
+                'What quality number would you give this?(first num for data ' \
+                'quality(0-3), second for ability to fit model to data(0-1))')
+        else:
+            qnum = '__'
+        if file_name is not None:
+            print('Saving figure to:', file_name)
+            fig.savefig(file_name, dpi=600)
+        plt.close(fig)
+        gc.collect()
 
-    return qnum
+        return qnum
 
-class GetPicks:
-    def __init__(self, spec, times, frequencies, vmin, vmax, tarrive, 
-                 make_picks=True, spec_window=120):
-        self.spec = spec
-        self.times = times
-        self.frequencies = frequencies
+
+class GetPicks(SpecPlot):
+    def __init__(self, vmin, vmax, make_picks=True, save_picks=False):
         self.vmin = vmin
         self.vmax = vmax
-        self.tarrive = tarrive
         self.make_picks = make_picks
-        self.spec_window = spec_window
-        self.start_time = tarrive - spec_window
+        self.save_picks = save_picks
+
     def doppler_points(self):
         '''Interactive picking of points on spectrogram for overtone curve'''
 
@@ -362,23 +367,10 @@ class GetPicks:
             if input("Do you want to repick your points? (y or n)").lower() != 'y':
                 break
         start_time, end_time = set_time[:2]
-        # Filter picks to only those within the selected time window
-        ftobs, ffobs, peak_ass = [], [], []
-        cum = 0
-        for p in range(len(fs_array)):
-            count = 0
-            for j in range(cum, cum + peaks_assos[p]):
-                if start_time <= tobs[j] <= end_time:
-                    ftobs.append(tobs[j])
-                    ffobs.append(fobs[j])
-                    count += 1
-            cum += peaks_assos[p]
-            peak_ass.append(count)
-        peaks_assos = peak_ass
-        tobs, fobs = ftobs, ffobs
-        return ftobs, ffobs, peaks_assos
+        return start_time, end_time
 
-    def doppler_picks(self, file_name, BASE_DIR):
+
+    def single_doppler_data(self, file_name, BASE_DIR):
         """
         Pick the points for the doppler shift. Specific to Seppi 2025 data structure
         and flightradar25 information needed.
@@ -406,9 +398,9 @@ class GetPicks:
             list: The list of picks the user picked along the most prominent overtone.
         """
 
-        if Path(file_name).exists():
+        if Path(f'{BASE_DIR}/{file_name}').exists():
             coords = []
-            with open(file_name, 'r') as file:
+            with open(f'{BASE_DIR}/{file_name}', 'r') as file:
                 for line in file:
                     pick_data = line.split(',')
                     coords.append((float(pick_data[0]), float(pick_data[1])))
@@ -431,9 +423,9 @@ class GetPicks:
                         start_time = self.tarrive - self.spec_window
                         # Rewrite file with start_time as third column 
                         # and move \n to next column
-                        with open(file_name, 'r') as file:
+                        with open(f'{BASE_DIR}/{file_name}', 'r') as file:
                             lines = file.readlines()
-                        with open(file_name, 'w') as file:
+                        with open(f'{BASE_DIR}/{file_name}', 'w') as file:
                             for line in lines:
                                 pick_data = line.strip().split(',')
                                 # Only keep first two columns, append start_time 
@@ -448,8 +440,13 @@ class GetPicks:
         
         elif self.make_picks:
             start_time = self.tarrive - self.spec_window
-            make_base_dir(BASE_DIR)
             coords = self.doppler_points()
+            if self.save_picks:
+                make_base_dir(BASE_DIR)
+                with open(f'{BASE_DIR}/{file_name}', 'w') as file:
+                    for coord in coords:
+                        file.write(f'{coord[0]},{coord[1]},{start_time},\n')
+                file.close()
             return coords, start_time
         
         else:
@@ -457,7 +454,7 @@ class GetPicks:
 
     ##############################################################################################################################################################################################################
 
-    def overtone_picks(self, t0, file_name, BASE_DIR):
+    def overtone_data(self, t0, file_name, BASE_DIR):
         """
         Pick the points for the overtone shift. Specific to Seppi 2025 data 
         structure and flightradar25 information needed.
@@ -488,11 +485,11 @@ class GetPicks:
             list: List of times corresponding to the picked frequencies.
         """
 
-        if Path(file_name).exists():
+        if Path(f'{BASE_DIR}/{file_name}').exists():
 
             peaks = []
             freqpeak = []
-            with open(file_name, 'r') as file:
+            with open(f'{BASE_DIR}/{file_name}', 'r') as file:
                 for line in file:
                     pick_data = line.split(',')
                     peaks.append(float(pick_data[1]))
@@ -501,17 +498,20 @@ class GetPicks:
             return peaks, freqpeak
         
         elif self.make_picks:
-
-            make_base_dir(BASE_DIR)
             peaks, freqpeak = self.overtone_points(axvline=t0)
-
+            if self.save_picks:
+                make_base_dir(BASE_DIR)
+                with open(f'{BASE_DIR}/{file_name}', 'w') as file:
+                    for p, f in zip(peaks, freqpeak):
+                        file.write(f'{f},{p},\n')
+                file.close()
             return peaks, freqpeak
         else:
             return [], []
 
     ##############################################################################################################################################################################################################
 
-    def time_picks(self,tobs, fobs, fs_array, peaks_assos, file_name, BASE_DIR):
+    def final_data(self,tobs, fobs, fs_array, peaks_assos, file_name, BASE_DIR):
         """
         Pick the points for the time shift. Specific to Seppi 2025 data structure
         and flightradar25 information needed.
@@ -532,9 +532,9 @@ class GetPicks:
                 for indexing purposes.
         """
 
-        if Path(file_name).exists():
+        if Path(f'{BASE_DIR}/{file_name}').exists():
             set_time = []
-            with open(file_name, 'r') as file:
+            with open(f'{BASE_DIR}/{file_name}', 'r') as file:
                 for line in file:
                     pick_data = line.split(',')
                     set_time.append(float(pick_data[0]))
@@ -549,7 +549,7 @@ class GetPicks:
             peak_ass = []
             cum = 0
             
-            for p in range(w):
+            for p in range(len(fs_array)):
                 count = 0
                 for j in range(cum,cum+peaks_assos[p]):
                     if tobs[j] >= s_time and tobs[j] <= e_time:
@@ -566,18 +566,37 @@ class GetPicks:
             return tobs, fobs, peaks_assos
 
         elif self.make_picks:
-
-            make_base_dir(BASE_DIR)
-            tobs, fobs, peaks_assos = self.time_window_points(tobs, fobs, 
+            start_time, end_time = self.time_window_points(tobs, fobs, 
                                                               fs_array, 
                                                               peaks_assos
                                                               )
-            return tobs, fobs, peaks_assos
+            if self.save_picks:
+                make_base_dir(BASE_DIR)
+                with open(f'{BASE_DIR}/{file_name}', 'w') as file:
+                    for tt in [start_time, end_time]:
+                        file.write(f'{tt},\n')
+                file.close()
+
+            # Filter picks to only those within the selected time window
+            ftobs, ffobs, peak_ass = [], [], []
+            cum = 0
+            for p in range(len(fs_array)):
+                count = 0
+                for j in range(cum, cum + peaks_assos[p]):
+                    if start_time <= tobs[j] <= end_time:
+                        ftobs.append(tobs[j])
+                        ffobs.append(fobs[j])
+                        count += 1
+                cum += peaks_assos[p]
+                peak_ass.append(count)
+            peaks_assos = peak_ass
+            tobs, fobs = ftobs, ffobs
+            return ftobs, ffobs, peaks_assos
 
         else:
             return tobs, fobs, peaks_assos
 
-    def get_auto_picks_full(self, peaks, time_peaks, corridor_width, t0, v, d0, 
+    def auto_picks_full(self, peaks, time_peaks, corridor_width, t0, v, d0, 
                             c, sigma_prior):
         """
         Get automatic picks for all overtones.
